@@ -19,17 +19,27 @@
 <!-- yep, this should be a REST get and display call. -->
 </header>
 <form id="new_item">
+<h2>New Item</h2>
 <input type="hidden" name="author" value="AUTHOR" />
-<div class="times">
-<label for="start_time">Start time:</label><input type="date" name="start_time" value="" />
-<label for="end_time">End time:</label><input type="date" name="end_time" value="" />
+<fieldset class="times">
+<legend>When to show?</legend>
+<label for="start_time">Start time:</label><input type="datetime-local" name="start_time" value="" />
+<label for="end_time">End time:</label><input type="datetime-local" name="end_time" value="" />
 <label for="idle_time">Idle time(in seconds):</label><input type="number" name="idle_time" value="0" />
-</div>
-<div class="locale">
-<label for="lang">Language:</label><input type="text" length="2">en</input>-
-<label for="locale">Locale:</label><input type="text" length="2">US</input>
-</div>
-<div class="platform>
+</fieldset>
+<fieldset class="note">
+<legend>What should they see?</legend>
+<label for="title">Title</label><input type="text" name="title" />
+<label for="url">URL</label><input type="text" name="url" />
+<label for="text">Text</label><input type="text" name="text" />
+</fieldset>
+<fieldset class="locale">
+<legend>Who should see?</legend>
+<label for="lang">Language:</label><input type="text" length="2" value="en" />-
+<label for="locale">Locale:</label><input type="text" length="2" value="US" />
+</fieldset>
+<fieldset class="platform">
+<legend>On what?</legend>
 <label for="platform">Platform:</label><select name="platform">
 <option name="all" value="">All versions</option>
 %for platform in ['all','android','b2g','mac','pc']:
@@ -41,7 +51,7 @@
 <option name="${channel}">${channel}</option>
 %endfor
 </select>
-</div>
+</fieldset>
 <button type="submit">Create</button>
 <button type="clear">Clear</button>
 </form>

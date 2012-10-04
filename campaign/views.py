@@ -12,7 +12,7 @@ import os
 
 
 fetch = Service(name='fetch',
-        path='/{channel}/{version}/{platform}',
+        path='/campaigns/{channel}/{version}/{platform}',
         description='Fetcher')
 author = Service(name='author',
         path='/author/',

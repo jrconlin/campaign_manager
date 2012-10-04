@@ -1,8 +1,24 @@
 from sqlalchemy import (create_engine, MetaData, Table, Column,Integer, String, Text, Float, text)
 from random import randint
 from time import time
-from hashlib import md5
+import string
 import json
+import math
+
+ALPHABET = (string.digits + string.letters)
+
+def as_id(num):
+    if num == 0:
+        return ALPHABET[0]
+    barray = []
+    base = len(ALPHABET)
+    while num:
+        remain = num % base
+        num = num // base
+        barray.append(ALPHABET[remain])
+    barray.reverse()
+    return ''.join(barray)
+
 
 project = 'campaign'
 dsn = 'mysql://snip:snip@localhost/%s' % project
@@ -12,7 +28,7 @@ engine = create_engine(dsn)
 metadata = MetaData()
 
 campaigns = Table('%ss' % project, metadata,
-        Column('id', Integer, autoincrement=True, primary_key=True),
+        Column('id', String(25), primary_key=True),
         Column('start_time', Integer, index=True),
         Column('end_time', Integer, index=True),
         Column('idle_time', Integer, index=True),
@@ -48,34 +64,43 @@ def picker(items):
     else:
         return items[0]
 
-query = """insert into %s.%ss (start_time, end_time, idle_time,
+query = """insert into %s.%ss (id, start_time, end_time, idle_time,
     lang, locale, channel, platform, version, created, author, note) values
-    (:start_time, :end_time, :idle_time, :lang, :locale, :channel,
+    (:id, :start_time, :end_time, :idle_time, :lang, :locale, :channel,
      :platform, :version, :created, :author, :note);""" % (project, project)
 
 for l in xrange(0,10000):
     r = randint(0,100)
-    now = int(time())
     lang = picker(langs)
     locale = picker(locales)
 
-    sig = md5()
-    note = {'title': picker(titles), 'text': picker(texts)}
-    sig.update(('%s_%s:' % (lang, locale)) + json.dumps(note))
+    #this is semi-meaningless. It's based off of the creation time just
+    # to limit collisions.
+    while True:
+        try:
+            now = time()
+            nowbits = math.modf(now)
+            sig = "%s%s" % (as_id(int(nowbits[1])),
+                    as_id(int(nowbits[0]*100000)))
+            note = {'title': picker(titles), 'text': picker(texts)}
+            note['url'] = 'https://%s.m.c/%s_%s/' % (project, lang,
+                locale)
 
-    note['url'] = 'https://%s.m.c/%s_%s/%s' % (project, lang,
-            locale, sig.hexdigest())
+            engine.execute(text(query),
+                id=sig,
+                start_time=now,
+                end_time=int(now + picker(offsets)),
+                idle_time=int(now + picker(offsets)),
+                lang=lang,
+                locale=locale,
+                channel=picker(channels),
+                platform=picker(platforms),
+                version=picker(version),
+                created=int(now + picker(offsets)),
+                author=picker(authors),
+                note=json.dumps(note))
 
-
-    engine.execute(text(query),start_time=now,
-        end_time=int(now + picker(offsets)),
-        idle_time=int(now + picker(offsets)),
-        lang=lang,
-        locale=locale,
-        channel=picker(channels),
-        platform=picker(platforms),
-        version=picker(version),
-        created=int(now + picker(offsets)),
-        author=picker(authors),
-        note=json.dumps(note))
-
+        except Exception, e:
+            print e
+            continue
+        break

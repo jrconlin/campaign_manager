@@ -5,20 +5,21 @@ from sqlalchemy import (Table, Column, Integer, String, Text, Float,
         create_engine, MetaData, text)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import scoped_session, sessionmaker
-from campaigns.storage import StorageBase
+from campaign.storage import StorageBase
 
 Base = declarative_base()
 Session = scoped_session(sessionmaker())
 
 class Storage(StorageBase):
+    __database__ = 'campaign'
     __tablename__ = 'campaigns'
 
     def __init__(self, config, **kw):
         try:
             super(Storage, self).__init__(config, **kw)
             self.metadata = MetaData()
-            self.campaigns = Table('campaigns', self.metadata,
-                Column('id', Integer, primary_key=True),
+            self.campaigns = Table(self.__tablename__, self.metadata,
+                Column('id', String(25), primary_key=True),
                 Column('channel', String(24), index=True, nullable=True),
                 Column('version', Float, index=True, nullable=True),
                 Column('platform', String(24), index=True, nullable=True),
@@ -26,6 +27,7 @@ class Storage(StorageBase):
                 Column('locale', String(24), index=True, nullable=True),
                 Column('start_time', Integer, index=True),
                 Column('end_time', Integer, index=True, nullable=True),
+                Column('idle_time', Integer, index=True, nullable=True),
                 Column('note', Text),
                 Column('author', String(255), index=True),
                 Column('created', Integer, index=True))
@@ -42,7 +44,7 @@ class Storage(StorageBase):
                     settings.get('mysql.user', 'user'),
                     settings.get('mysql.password', 'password'),
                     settings.get('mysql.host', 'localhost'),
-                    settings.get('msyql.db', 'campaigns'))
+                    settings.get('msyql.db', self.__database__))
             self.engine = create_engine(dsn, pool_recycle=3600)
             self.metadata.create_all(self.engine)
         except Exception, e:
@@ -70,7 +72,8 @@ class Storage(StorageBase):
                 'created': created if created else now,
                 }
         self.insert(snip)
-        query = ("insert into campaigns.campaigns "
+        query = ("insert into %s.%s " % (self.__database__,
+                    self.__tablename__) +
                 "(start_time, end_time, idle_time, "
                 "lang, locale, channel, platform, version, "
                 "created, author, note) "
@@ -87,8 +90,9 @@ class Storage(StorageBase):
         # Really shouldn't allow "global" variables, but I know full well
         # that they're going to want them.
         params = {}
-        sql ="""select id, note from campaigns.campaigns where
-            start_time < unix_timestamp() and end_time > unix_timestamp() """
+        sql =("select id, note from %s.%s where " % (self.__database__,
+                self.__tablename__) +
+            " start_time < unix_timestamp() and end_time > unix_timestamp() ")
         if last_accessed:
             sql += "and created > :last_accessed "
             params['last_accessed'] = int(last_accessed)
@@ -111,12 +115,15 @@ class Storage(StorageBase):
         items = self.engine.execute(text(sql), **dict(params))
         result = []
         for item in items:
-            result.append({'id': item.id, 'note': json.loads(item.note)})
+            note = json.loads(item.note)
+            note.update({'id': item.id})
+            result.append(note)
         return {'snippets': result}
 
     def get_all(self, limit=None):
         result = []
-        sql = 'select * from campaigns.campaigns '
+        sql = 'select * from %s.%s ' % (self.__database__,
+                self.__tablename__)
         if limit:
             sql += 'limit %d' % limit
         items = self.engine.execute(text(sql))

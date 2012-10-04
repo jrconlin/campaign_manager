@@ -1,10 +1,12 @@
 """ Cornice services.
 """
+from . import LOG
 from cornice import Service
-from time import strptime
 from mako.template import Template
+from pyramid.httpexceptions import HTTPNotModified, HTTPNoContent
+from time import strptime
 from webob import Response
-#import logger
+import json
 import os
 
 
@@ -37,11 +39,24 @@ def get_last_accessed(request):
         if 'If-Modified-Since' in request.headers:
             last_accessed_str = request.headers.get('If-Modified-Since')
             last_accessed = strptime(last_accessed_str)
+            return {'last_accessed': last_accessed}
     except Exception, e:
-        #logger.error('Exception: %s', str(e))
         import pdb; pdb.set_trace()
-    return {'last_accessed': last_accessed}
+        request.registry['metlog'].metlog(type='campaign_error',
+                severity=LOG.ERROR,
+                payload='Exception: %s' % str(e))
+    return last_accessed
 
+
+def log_fetched(request, reply):
+    logger = request.registry['metlog'].metlog
+    for item in reply['snippets']:
+        continue; ## NOOP
+        logger(type='campaign_log',
+                severity=LOG.INFO,
+                payload=json.dumps(item))
+        #metlogger.metlog('msgtype', payload='payload')
+        pass
 
 @fetch.get()
 def get_snippets(request):
@@ -50,8 +65,15 @@ def get_snippets(request):
     storage = request.registry.get('storage')
     args = request.matchdict
     args.update(get_lang_loc(request))
-    args.update(get_last_accessed(request))
+    last_accessed = get_last_accessed(request)
+    args.update(last_accessed)
     reply = storage.get(**args)
+    if not len(reply):
+        if last_accessed:
+            raise HTTPNotModified
+        else:
+            raise HTTPNoContent
+    log_fetched(reply)
     return reply
 
 def user_authed(request):
@@ -63,7 +85,10 @@ def user_authed(request):
 
 def get_template(name):
     name = os.path.join(_TMPL, '%s.mako' % name)
-    return Template(filename=name)
+    try:
+        return Template(filename=name)
+    except IOError:
+        return None
 
 def get_file(name):
     name = os.path.join(_TMPL, '%s' % name)

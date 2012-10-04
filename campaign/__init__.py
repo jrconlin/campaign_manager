@@ -11,7 +11,6 @@ def main(global_config, **settings):
     config.include("cornice")
     config.scan("campaign.views")
     config.registry['storage'] = Storage(config)
-    import pdb; pdb.set_trace()
     metlog_client = client_from_stream_config(
             open(global_config['__file__'], 'r'),
             'metlog')

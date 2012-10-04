@@ -1,9 +1,10 @@
 """ Cornice services.
 """
 from . import LOG
-from cornice import Service
+from mozsvc.metrics import Service
 from mako.template import Template
-from pyramid.httpexceptions import HTTPNotModified, HTTPNoContent
+from pyramid.httpexceptions import (HTTPNotModified, HTTPNoContent,
+        HTTPNotFound, HTTPServerError)
 from time import strptime
 from webob import Response
 import json
@@ -39,13 +40,12 @@ def get_last_accessed(request):
         if 'If-Modified-Since' in request.headers:
             last_accessed_str = request.headers.get('If-Modified-Since')
             last_accessed = strptime(last_accessed_str)
-            return {'last_accessed': last_accessed}
     except Exception, e:
         import pdb; pdb.set_trace()
         request.registry['metlog'].metlog(type='campaign_error',
                 severity=LOG.ERROR,
                 payload='Exception: %s' % str(e))
-    return last_accessed
+    return {'last_accessed': last_accessed}
 
 
 def log_fetched(request, reply):
@@ -62,12 +62,14 @@ def log_fetched(request, reply):
 def get_snippets(request):
     """Returns campaigns in JSON."""
     # get the valid user information from the request.
+    metlog = request.registry.get('metlog')
     storage = request.registry.get('storage')
     args = request.matchdict
     args.update(get_lang_loc(request))
     last_accessed = get_last_accessed(request)
     args.update(last_accessed)
     reply = storage.get(**args)
+    metlog.metlog(type='campaign', payload='fetch', fields=args)
     if not len(reply):
         if last_accessed:
             raise HTTPNotModified
@@ -88,17 +90,27 @@ def get_template(name):
     try:
         return Template(filename=name)
     except IOError:
-        return None
+        raise HTTPServerError
+
 
 def get_file(name):
-    name = os.path.join(_TMPL, '%s' % name)
-    ff = open(name)
-    return ff.read()
+    try:
+        name = os.path.join(_TMPL, '%s' % name)
+        ff = open(name)
+        return ff.read()
+    except IOError:
+        raise HTTPNotFound
+
+
+def get_ideltime(request):
+    return {'idle_time': int(request.params.get('idle', 0))}
+
 
 @author.get()
 def get_author(request):
     #if authorized:
     # get list of promos
+    #metlog = request.registry.get('metlog')
     storage = request.registry.get('storage')
     tdata = {}
     tdata['notes'] = storage.get_all(limit=10)

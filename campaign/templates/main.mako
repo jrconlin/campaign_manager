@@ -1,14 +1,15 @@
+<!doctype html>
 <%
     from time import (strftime, gmtime)
     import json
 
     notes = pageargs.get('notes', [])
+    author = pageargs.get('author', 'UNKNOWN')
 
 %>
-<!doctype html>
 <html>
 <head>
-<title>Welcome, <!--TODO: use var that ids author -->$AUTHOR</title>
+    <title>Welcome ${author}</title>
 <link rel="stylesheet" type="text/css" href="/style.css" />
 </head>
 <body>
@@ -20,7 +21,7 @@
 </header>
 <form id="new_item">
 <h2>New Item</h2>
-<input type="hidden" name="author" value="AUTHOR" />
+<input type="hidden" name="author" value="${author}" />
 <fieldset class="times">
 <legend>When to show?</legend>
 <label for="start_time">Start time:</label><input type="datetime-local" name="start_time" value="" />

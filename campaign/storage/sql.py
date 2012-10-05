@@ -10,6 +10,7 @@ from campaign.storage import StorageBase
 Base = declarative_base()
 Session = scoped_session(sessionmaker())
 
+
 class Storage(StorageBase):
     __database__ = 'campaign'
     __tablename__ = 'campaigns'
@@ -19,7 +20,7 @@ class Storage(StorageBase):
             super(Storage, self).__init__(config, **kw)
             self.metadata = MetaData()
             self.campaigns = Table(self.__tablename__, self.metadata,
-                Column('id', String(25), primary_key=True),
+                    Column('id', String(25), primary_key=True),
                 Column('channel', String(24), index=True, nullable=True),
                 Column('version', Float, index=True, nullable=True),
                 Column('platform', String(24), index=True, nullable=True),
@@ -31,6 +32,10 @@ class Storage(StorageBase):
                 Column('note', Text),
                 Column('author', String(255), index=True),
                 Column('created', Integer, index=True))
+            self.authors = Table('authors', self.metadata,
+                Column('id', Integer, autoincrement=True, primary_key=True),
+                Column('user', String(255), index=True),
+                Column('name', String(255)))
             self._connect()
             #TODO: add the most common index.
         except Exception, e:
@@ -51,12 +56,10 @@ class Storage(StorageBase):
             logging.error('Could not connect to db "%s"' % repr(e))
             raise e
 
-
-
-    def put(self, note, author, created,
+    def put_announce(self, note, author, created,
             version=None, channel=None, platform=None,
             lang='en', locale='us',
-            idle_time=0, start_time=None, end_time=None):
+            idle_time=0, start_time=None, end_time=None, **kw):
         now = time()
         snip = {
                 'channel': channel,
@@ -83,7 +86,7 @@ class Storage(StorageBase):
         self.engine.execute(text(query), **dict(snip))
         return self
 
-    def get(self, channel=None, platform=None, version=None,
+    def get_announce(self, channel=None, platform=None, version=None,
             lang='en', locale=None,
             start_time=None, end_time=None, author=None, created=None,
             idle_time=0, last_accessed=None, **kw):
@@ -118,9 +121,9 @@ class Storage(StorageBase):
             note = json.loads(item.note)
             note.update({'id': item.id})
             result.append(note)
-        return {'snippets': result}
+        return result
 
-    def get_all(self, limit=None):
+    def get_all_announce(self, limit=None):
         result = []
         sql = 'select * from %s.%s ' % (self.__database__,
                 self.__tablename__)
@@ -130,4 +133,3 @@ class Storage(StorageBase):
         for item in items:
             result.append(item)
         return result
-

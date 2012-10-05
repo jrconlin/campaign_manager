@@ -1,10 +1,10 @@
 """ Cornice services.
 """
-from . import LOG
+from campaign import LOG
+from campaign.auth.default import DefaultAuth
 from mozsvc.metrics import Service
 from mako.template import Template
-from pyramid.httpexceptions import (HTTPNotModified, HTTPNoContent,
-        HTTPNotFound, HTTPServerError)
+import pyramid.httpexceptions as err
 from time import strptime
 from webob import Response
 import json
@@ -12,7 +12,7 @@ import os
 
 
 fetch = Service(name='fetch',
-        path='/campaigns/{channel}/{version}/{platform}',
+        path='/announcements/{channel}/{version}/{platform}',
         description='Fetcher')
 author = Service(name='author',
         path='/author/',
@@ -20,6 +20,10 @@ author = Service(name='author',
 fstatic = Service(name='fstatic',
         path='/{file}',
         description='hack')
+login = Service(name='login',
+        path='/login',
+        description='login')
+
 
 _TMPL = os.path.join(os.path.dirname(__file__), 'templates')
 
@@ -50,7 +54,7 @@ def get_last_accessed(request):
 
 def log_fetched(request, reply):
     logger = request.registry['metlog'].metlog
-    for item in reply['snippets']:
+    for item in reply['announcements']:
         continue; ## NOOP
         logger(type='campaign_log',
                 severity=LOG.INFO,
@@ -68,29 +72,23 @@ def get_snippets(request):
     args.update(get_lang_loc(request))
     last_accessed = get_last_accessed(request)
     args.update(last_accessed)
-    reply = storage.get(**args)
+    reply = {'announcements': storage.get_announce(**args)}
     metlog.metlog(type='campaign', payload='fetch', fields=args)
     if not len(reply):
         if last_accessed:
-            raise HTTPNotModified
+            raise err.HTTPNotModified
         else:
-            raise HTTPNoContent
+            raise err.HTTPNoContent
     log_fetched(reply)
     return reply
 
-def user_authed(request):
-    # TODO: set as decorator?
-    # TODO: limit to mozilla IPs?
-    # is the user logged in?
-    # is the bid from mozilla?
-    pass
 
 def get_template(name):
     name = os.path.join(_TMPL, '%s.mako' % name)
     try:
         return Template(filename=name)
     except IOError:
-        raise HTTPServerError
+        raise err.HTTPServerError
 
 
 def get_file(name):
@@ -99,35 +97,88 @@ def get_file(name):
         ff = open(name)
         return ff.read()
     except IOError:
-        raise HTTPNotFound
+        raise err.HTTPNotFound
 
 
 def get_ideltime(request):
     return {'idle_time': int(request.params.get('idle', 0))}
 
 
+def authorized(request):
+    try:
+        session = request.session
+        for valid_domain in ['@mozilla.com', '@mozilla.org']:
+            if valid_domain in session['uid']:
+                return True
+    except Exception,e:
+        pass
+    return False
+
+
 @author.get()
 def get_author(request):
-    #if authorized:
-    # get list of promos
-    #metlog = request.registry.get('metlog')
+    if not authorized(request):
+        return login(request)
     storage = request.registry.get('storage')
     tdata = {}
-    tdata['notes'] = storage.get_all(limit=10)
+    tdata['notes'] = storage.get_all_announce(limit=10)
+    tdata['author'] = request.session['uid']
     template = get_template('main')
     content_type = 'text/html'
     reply = template.render(**tdata)
     response = Response(str(reply), content_type=content_type)
     return response
 
+
 @author.post()
 def put_author(request):
+    if not authorized(request):
+        return login(request)
     storage = request.registry.get('storage')
-    import pdb; pdb.set_trace();
-    storage.put(request.matchdict)
+    args = request.matchdict
+    args.update(request.params)
+    storage.put_announce(**args)
+
 
 @fstatic.get()
 def get_static(request):
     response = Response(str(get_file(request.matchdict.get('file'))),
             content_type = 'text/css')
     return response
+
+
+def login_page(request):
+    session = request.session
+    template = get_template('login')
+    response = Response(str(template.render(audience=request.get('HTTP_HOST'))),
+        status=403)
+    if (session.get('uid')):
+        del(session['uid'])
+    session.persist()
+    session.save()
+    return response
+
+
+def login(request):
+    params = dict(request.params.items())
+    try:
+        if (request.json_body):
+            params.update(request.json_body.items())
+    except ValueError:
+        pass
+    try:
+        #config = request.registry.get('config', {})
+        auth = request.registry.get('auth', DefaultAuth)
+        email = auth.get_user_id(request)
+        if email is None:
+            return login_page(request)
+        session = request.session
+        session['uid'] = email
+        session.persist()
+        session.save()
+    except Exception, e:
+        import pdb; pdb.set_trace();
+        print ('missing credentials? %s', str(e))
+        return login_page(request)
+    # User Logged in
+    return get_author(request)

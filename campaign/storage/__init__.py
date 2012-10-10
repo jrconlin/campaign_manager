@@ -1,6 +1,8 @@
 #import memcache
+from dateutil import parser
 from time import time
 import math
+import json
 import string
 
 class StorageException(Exception):
@@ -31,6 +33,57 @@ class StorageBase(object):
         return '%s%s' % (self._encode_num(int(nowbits[1])),
                 self._encode_num(int(nowbits[0]*100000)))
 
+    def parse_date(self, datestr):
+        if not datestr:
+            return None
+        try:
+            return float(datestr)
+        except ValueError:
+            pass
+        try:
+            return float (parser.parse(datestr).strftime('%s'))
+        except ValueError:
+            pass
+        return None
+
+    def normalize_announce(self, data):
+        now = time()
+        data['start_time'] = self.parse_date(data.get('start_time', now))
+        data['end_time'] = self.parse_date(data.get('end_time'))
+        if data.get('channel') == 'all':
+            data['channel'] = None
+        if data.get('platform') == 'all':
+            data['platform'] = None
+        if not data.get('version'):
+            data['version'] = None
+        snip = {
+                'id': data.get('id'),
+                'channel': data.get('channel'),
+                'version': data.get('version'),
+                'platform': data.get('platform'),
+                'idle_time': data.get('idle_time', 0),
+                'lang': data.get('lang'),
+                'locale': data.get('locale'),
+                'note': json.dumps({
+                    'title': data.get('title'),
+                    'text': data.get('note')
+                    }),
+                'dest_url': data.get('dest_url'),
+                'start_time': data.get('start_time', now),
+                'end_time': data.get('end_time'),
+                'author': data.get('author'),
+                'created': data.get('created', now),
+                }
+        if snip.get('id') is None:
+            snip['id'] = self._gen_key(snip)
+        return snip
+
+    # customize for each memory model
+
+    def del_announce(self, keys):
+        pass
+
+
     def put_announce(self, data):
         data['id'] = self._gen_key(data)
         now = time()
@@ -50,9 +103,3 @@ class StorageBase(object):
         # do a multi_get.
 
         # finally, if there isn't a minimum set of elements, fetch from the db.
-
-    def refresh(self):
-        # restock memcache from the db.
-        pass
-
-

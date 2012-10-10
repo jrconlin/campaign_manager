@@ -6,7 +6,7 @@
 <html>
     <head>
         <title>Please log in</title>
-        <link rel="stylesheet" type="text/css" href="style.css" />
+        <link rel="stylesheet" type="text/css" href="/style.css" />
   </head>
   <body>
       <hgroup>

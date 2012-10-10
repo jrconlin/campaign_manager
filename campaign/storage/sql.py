@@ -1,8 +1,6 @@
 import logging
 import json
-from dateutil import parser
-from time import time
-from . import StorageBase
+from . import StorageBase, StorageException
 from sqlalchemy import (Column, Integer, String, Text, Float,
         create_engine, MetaData, text)
 from sqlalchemy.ext.declarative import declarative_base
@@ -53,67 +51,20 @@ class Storage(StorageBase):
                     settings.get('msyql.db', self.__database__))
             self.engine = create_engine(dsn, pool_recycle=3600)
             Base.metadata.create_all(self.engine)
+            self.session = scoped_session(sessionmaker(bind=self.engine))()
             #self.metadata.create_all(self.engine)
         except Exception, e:
             logging.error('Could not connect to db "%s"' % repr(e))
             raise e
 
 
-    def parse_date(self, datestr):
-        if datestr is None:
-            return None
-        try:
-            return float(datestr)
-        except ValueError:
-            pass
-        try:
-            return float (parser.parse(datestr).strftime('%s'))
-        except ValueError:
-            pass
-        return None
-
-    def normalize_announce(self, data):
-        now = time()
-        data['start_time'] = self.parse_date(data.get('start_time', now))
-        data['end_time'] = self.parse_date(data.get('end_time'))
-        if data.get('channel') == 'all':
-            data['channel'] = None
-        if data.get('platform') == 'all':
-            data['platform'] = None
-        if not data.get('version'):
-            data['version'] = None
-        snip = {
-                'id': data.get('id'),
-                'channel': data.get('channel'),
-                'version': data.get('version'),
-                'platform': data.get('platform'),
-                'idle_time': data.get('idle_time', 0),
-                'lang': data.get('lang'),
-                'locale': data.get('locale'),
-                'note': json.dumps({
-                    'title': data.get('title'),
-                    'text': data.get('note')
-                    }),
-                'dest_url': data.get('dest_url'),
-                'start_time': data.get('start_time', now),
-                'end_time': data.get('end_time'),
-                'author': data.get('author'),
-                'created': data.get('created', now),
-                }
-        if snip.get('id') is None:
-            snip['id'] = self._gen_key(snip)
-        return snip
-
-
     def put_announce(self, data):
         if data.get('note') is None:
             raise StorageException('Nothing to do.')
         snip = self.normalize_announce(data)
-        session = scoped_session(sessionmaker(bind=self.engine))()
-        import pdb; pdb.set_trace()
         campaign = Campaign(**snip)
-        session.add(campaign)
-        session.commit()
+        self.session.add(campaign)
+        self.session.commit()
         return self
 
     def get_announce(self, data):
@@ -165,3 +116,12 @@ class Storage(StorageBase):
         for item in items:
             result.append(item)
         return result
+
+    def del_announce(self, keys):
+        import pdb;pdb.set_trace()
+        #TODO: how do you safely do an "in (keys)" call?
+        sql = 'delete from %s.%s where id = :key' % (self.__database__,
+                self.__tablename__)
+        for key in keys:
+            self.engine.execute(text(sql), {"key": key});
+        self.session.commit()

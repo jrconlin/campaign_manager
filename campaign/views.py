@@ -14,6 +14,12 @@ import os
 fetch = Service(name='fetch',
         path='/announcements/{channel}/{version}/{platform}',
         description='Fetcher')
+fetchall = Service(name="fetchall",
+        path='/announcements/',
+        description='Fetch Everything')
+authorx = Service(name='authorx',
+        path='/author/{id}',
+        description='Authoring Interface with record')
 author = Service(name='author',
         path='/author/',
         description='Authoring Interface')
@@ -72,14 +78,15 @@ def get_snippets(request):
     args.update(get_lang_loc(request))
     last_accessed = get_last_accessed(request)
     args.update(last_accessed)
-    reply = {'announcements': storage.get_announce(**args)}
+    import pdb; pdb.set_trace()
+    reply = {'announcements': storage.get_announce(args)}
     metlog.metlog(type='campaign', payload='fetch', fields=args)
     if not len(reply):
         if last_accessed:
             raise err.HTTPNotModified
         else:
             raise err.HTTPNoContent
-    log_fetched(reply)
+    log_fetched(request, reply)
     return reply
 
 
@@ -114,14 +121,23 @@ def authorized(email):
     return False
 
 
-@author.get()
-def get_author(request):
+@fetchall.get()
+def fetchall_snippets(request):
     if not authorized(request.session.get('uid')):
         return login(request)
     storage = request.registry.get('storage')
-    tdata = {}
-    tdata['notes'] = storage.get_all_announce(limit=10)
+    tdata = {"notes": storage.get_all_announce()}
+    return tdata
+
+
+@author.get()
+@authorx.get()
+def admin_page(request, error=None):
+    if not authorized(request.session.get('uid')):
+        return login(request)
+    tdata = fetchall_snippets(request)
     tdata['author'] = request.session['uid']
+    tdata['error'] = error
     template = get_template('main')
     content_type = 'text/html'
     reply = template.render(**tdata)
@@ -129,13 +145,30 @@ def get_author(request):
     return response
 
 
+# sad to use post for DELETE, but JQuery doesn't add args to DELETE for bulk.
 @author.post()
-def put_author(request):
+@authorx.post()
+def manage_announce(request):
     if not authorized(request.session.get('uid')):
         return login(request)
     storage = request.registry.get('storage')
     session = request.session
     args = dict(request.params)
+    err = None
+    if not args.get('author'):
+        args['author'] = session.get('uid')
+    if 'assertion' in args:
+        """ Login request"""
+        return admin_page(request)
+    if 'delete' in args or 'delete[]' in args:
+        try:
+            del_announce(request)
+        except err.HTTPOk:
+            pass
+        except err.HTTPNotFound, e:
+            import pdb; pdb.set_trace();
+            pass
+        return admin_page(request)
     if not args.get('author'):
         args['author'] = session.get('uid')
     try:
@@ -144,7 +177,20 @@ def put_author(request):
         import pdb; pdb.set_trace()
         # display error page.
         pass
-    return get_author(request);
+    return admin_page(request);
+
+@author.delete()
+def del_announce(request):
+    if not authorized(request.session.get('uid')):
+        return login(request)
+    storage = request.registry.get('storage')
+    args = dict(request.params)
+    import pdb;pdb.set_trace();
+    deleteables = args.get('delete', args.get('delete[]', '')).split(',')
+    if len(deleteables):
+        storage.del_announce(deleteables)
+    raise err.HTTPOk
+
 
 @fstatic.get()
 def get_static(request):
@@ -198,4 +244,4 @@ def login(request, skipAuth=False):
         print ('missing credentials? %s', str(e))
         return login_page(request)
     # User Logged in
-    return get_author(request)
+    return manage_announce(request)

@@ -1,6 +1,6 @@
 <!doctype html>
 <%
-    from time import (strftime, gmtime)
+    from time import (strftime, localtime)
     import json
 
     config = pageargs.get('config', {})
@@ -15,7 +15,7 @@
 </head>
 <body>
 <header>
-<h1>Lovenote Admin Panel</h1>
+<h1>Campaign Admin Panel</h1>
 <div id="control">
 <button class="logout">Log out</button>
 <!-- yep, this should be a REST get and display call. -->
@@ -65,8 +65,8 @@
 <button id="clear" name="clear_all">Clear selected</button>
 <button id="delete" name="delete">Delete Selected</button>
 </div>
-<div class="data">
-    <div class="head row">
+<div id="data">
+<div class="head row">
 <div class="delete">Delete?</div>
 <div class="id">ID</div>
 <div class="created">Created</div>
@@ -89,32 +89,31 @@
 %for note in notes:
 <%
     dnote = dict(note);
-    if 'start_time' in note:
-        dnote['start_time'] = strftime(time_format, gmtime(note.start_time))
+    if dnote.get('start_time'):
+        dnote['start_time'] = strftime(time_format, localtime(note.start_time))
     else:
         dnote['start_time'] = '<i>Now</i>'
-    if 'end_time' in note:
-        dnote['end_time'] = strftime(time_format, gmtime(note.end_time))
+    if dnote.get('end_time'):
+        dnote['end_time'] = strftime(time_format, localtime(note.end_time))
     else:
         dnote['end_time'] = '<i>Forever</i>'
-    if not 'idle_time' in note:
+    if not dnote.get('idle_time'):
         dnote['idle_time'] = '<i>None</i>'
-    if not 'lang' in note:
+    if not dnote.get('lang'):
         dnote['lang'] = '<i>Everyone</i>'
-    if not 'locale' in note:
+    if not dnote.get('locale'):
         dnote['locale'] = '<i>Everywhere</i>'
-    if not 'channel' in note:
-        dnote.channel = '<i>All channels</i>'
-    if not 'platform' in note:
-        dnote.platform = '<i>All platforms</i>'
-    if not 'version' in note:
-        dnote.version = '<i>All versions</i>'
+    if not dnote.get('channel'):
+        dnote['channel'] = '<i>All channels</i>'
+    if not dnote.get('platform'):
+        dnote['platform'] = '<i>All platforms</i>'
+    if not dnote.get('version'):
+        dnote['version'] = '<i>All versions</i>'
 %>
-
-<div class="data row">
-    <div class="delete"><input type="checkbox" value="sel_${note.id}"></div>
+<div class="record row">
+    <div class="delete"><input type="checkbox" value="${note.id}"></div>
 <div class="id">${dnote['id']}</div>
-<div class="created">${strftime(time_format, gmtime(dnote['created']))}</div>
+<div class="created">${strftime(time_format, localtime(dnote['created']))}</div>
 <div class="start_time">${dnote['start_time']}</div>
 <div class="end_time">${dnote['end_time']}</div>
 <div class="idle_time">${dnote['idle_time']} days</div>
@@ -150,12 +149,31 @@
             });
     });
     $("#bidjs").ready(function() {
-            $(".logout").click(function(){
-                alert('clicky');
+        $(".logout").click(function(){
+            alert('clicky');
             navigator.id.logout();
             $.cookie("campaign", null, {path: "/"});
             document.location="/author/";
-            })
+        });
+    });
+    $("#delete").click(function() {
+        deleteables=[]
+        $("#existing .record .delete input").each(function () {
+            if (this.checked){
+               deleteables.push(this.value);
+            }
+        });
+        console.debug(deleteables);
+        $.ajax({url: "/author/",
+            type: "POST",
+            data: {"delete": deleteables},
+            success: function(data, status, xhr) {
+                document.location = "/author/";
+            },
+            error: function(xhr, status, error) {
+                alert(error);
+            }
+        });
     });
 </script>
 </html>

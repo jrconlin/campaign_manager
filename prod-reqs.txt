@@ -25,12 +25,14 @@ metlog-py==0.9.7
 paster==0.7
 pyramid==1.4a2
 pyramid-beaker==0.7
+python-dateutil==2.1
 pyzmq==2.2.0.1
 repoze.lru==0.6
 repoze.who==2.0
 repoze.who.plugins.browserid==0.5.0
 requests==0.14.1
 simplejson==2.6.2
+six==1.2.0
 translationstring==1.1
 unittest2==0.5.1
 venusian==1.0a7

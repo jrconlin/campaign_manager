@@ -39,7 +39,8 @@ campaigns = Table('%ss' % project, metadata,
         Column('version', Float, index=True),
         Column('created', Integer),
         Column('author', String(200)),
-        Column('note', Text))
+        Column('note', Text),
+        Column('dest_url', Text))
 
 metadata.create_all(engine)
 
@@ -90,7 +91,7 @@ for l in xrange(0,10000):
                 id=sig,
                 start_time=now,
                 end_time=int(now + picker(offsets)),
-                idle_time=int(now + picker(offsets)),
+                idle_time=int(3 + picker([0,1,2,4])),
                 lang=lang,
                 locale=locale,
                 channel=picker(channels),

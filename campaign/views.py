@@ -20,9 +20,9 @@ author = Service(name='author',
 fstatic = Service(name='fstatic',
         path='/{file}',
         description='hack')
-login = Service(name='login',
-        path='/login',
-        description='login')
+logout = Service(name='logout',
+        path='/logout/',
+        description='logout')
 
 
 _TMPL = os.path.join(os.path.dirname(__file__), 'templates')
@@ -104,11 +104,10 @@ def get_ideltime(request):
     return {'idle_time': int(request.params.get('idle', 0))}
 
 
-def authorized(request):
+def authorized(email):
     try:
-        session = request.session
         for valid_domain in ['@mozilla.com', '@mozilla.org']:
-            if valid_domain in session['uid']:
+            if valid_domain in email:
                 return True
     except Exception,e:
         pass
@@ -117,7 +116,7 @@ def authorized(request):
 
 @author.get()
 def get_author(request):
-    if not authorized(request):
+    if not authorized(request.session.get('uid')):
         return login(request)
     storage = request.registry.get('storage')
     tdata = {}
@@ -132,19 +131,35 @@ def get_author(request):
 
 @author.post()
 def put_author(request):
-    if not authorized(request):
+    if not authorized(request.session.get('uid')):
         return login(request)
     storage = request.registry.get('storage')
-    args = request.matchdict
-    args.update(request.params)
-    storage.put_announce(**args)
-
+    session = request.session
+    args = dict(request.params)
+    if not args.get('author'):
+        args['author'] = session.get('uid')
+    try:
+        storage.put_announce(args)
+    except Exception, e:
+        import pdb; pdb.set_trace()
+        # display error page.
+        pass
+    return get_author(request);
 
 @fstatic.get()
 def get_static(request):
     response = Response(str(get_file(request.matchdict.get('file'))),
             content_type = 'text/css')
     return response
+
+@logout.delete()
+def logout_page(request):
+    session = request.session
+    if 'uid' in session:
+        del session['uid']
+        session.persist()
+        session.save()
+    login_page(request)
 
 
 def login_page(request):
@@ -158,8 +173,7 @@ def login_page(request):
     session.save()
     return response
 
-
-def login(request):
+def login(request, skipAuth=False):
     params = dict(request.params.items())
     try:
         if (request.json_body):
@@ -172,10 +186,13 @@ def login(request):
         email = auth.get_user_id(request)
         if email is None:
             return login_page(request)
-        session = request.session
-        session['uid'] = email
-        session.persist()
-        session.save()
+        if authorized(email):
+            session = request.session
+            session['uid'] = email
+            session.persist()
+            session.save()
+        else:
+            return login_page(request)
     except Exception, e:
         import pdb; pdb.set_trace();
         print ('missing credentials? %s', str(e))

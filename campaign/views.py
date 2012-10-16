@@ -78,7 +78,6 @@ def get_snippets(request):
     args.update(get_lang_loc(request))
     last_accessed = get_last_accessed(request)
     args.update(last_accessed)
-    import pdb; pdb.set_trace()
     reply = {'announcements': storage.get_announce(args)}
     metlog.metlog(type='campaign', payload='fetch', fields=args)
     if not len(reply):
@@ -185,7 +184,6 @@ def del_announce(request):
         return login(request)
     storage = request.registry.get('storage')
     args = dict(request.params)
-    import pdb;pdb.set_trace();
     deleteables = args.get('delete', args.get('delete[]', '')).split(',')
     if len(deleteables):
         storage.del_announce(deleteables)

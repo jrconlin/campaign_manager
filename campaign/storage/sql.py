@@ -1,5 +1,6 @@
 import logging
 import json
+import time
 from . import StorageBase, StorageException
 from sqlalchemy import (Column, Integer, String, Text, Float,
         create_engine, MetaData, text)
@@ -44,11 +45,17 @@ class Storage(StorageBase):
     def _connect(self):
         try:
             settings = self.config.get_settings()
-            dsn = 'mysql://%s:%s@%s/%s' % (
-                    settings.get('mysql.user', 'user'),
-                    settings.get('mysql.password', 'password'),
-                    settings.get('mysql.host', 'localhost'),
-                    settings.get('msyql.db', self.__database__))
+            userpass = ''
+            host = ''
+            if (settings.get('db.user')):
+                userpass = '%s@%s' % (settings.get('db.user'),
+                        settings.get('db.password'))
+            if (settings.get('db.host')):
+                host = ':%s' % settings('db.host')
+            dsn = '%s://%s%s/%s' % (
+                    settings.get('db.type', 'mysql'),
+                    userpass, host,
+                    settings.get('db.db', self.__database__))
             self.engine = create_engine(dsn, pool_recycle=3600)
             Base.metadata.create_all(self.engine)
             self.session = scoped_session(sessionmaker(bind=self.engine))()
@@ -71,9 +78,9 @@ class Storage(StorageBase):
         # Really shouldn't allow "global" variables, but I know full well
         # that they're going to want them.
         params = {}
-        sql =("select id, note from %s.%s where " % (self.__database__,
-                self.__tablename__) +
-            " start_time < unix_timestamp() and end_time > unix_timestamp() ")
+        now = int(time.time())
+        sql =("select id, note from %s where " % self.__tablename__ +
+            " start_time < %s and end_time > %s " % (now, now))
         if data.get('last_accessed'):
             sql += "and created > :last_accessed "
             params['last_accessed'] = int(data.get('last_accessed'))
@@ -108,8 +115,7 @@ class Storage(StorageBase):
 
     def get_all_announce(self, limit=None):
         result = []
-        sql = 'select * from %s.%s order by created desc ' % (self.__database__,
-                self.__tablename__)
+        sql = 'select * from %s order by created desc ' % self.__tablename__
         if limit:
             sql += 'limit %d' % limit
         items = self.engine.execute(text(sql))
@@ -118,10 +124,8 @@ class Storage(StorageBase):
         return result
 
     def del_announce(self, keys):
-        import pdb;pdb.set_trace()
         #TODO: how do you safely do an "in (keys)" call?
-        sql = 'delete from %s.%s where id = :key' % (self.__database__,
-                self.__tablename__)
+        sql = 'delete from %s where id = :key' % self.__tablename__
         for key in keys:
             self.engine.execute(text(sql), {"key": key});
         self.session.commit()

@@ -50,12 +50,9 @@ class StorageBase(object):
         now = time()
         data['start_time'] = self.parse_date(data.get('start_time', now))
         data['end_time'] = self.parse_date(data.get('end_time'))
-        if data.get('channel') == 'all':
-            data['channel'] = None
-        if data.get('platform') == 'all':
-            data['platform'] = None
-        if not data.get('version'):
-            data['version'] = None
+        for nullable in ('channel', 'platform', 'version'):
+            if (data.get(nullable) in ('all','','0')):
+                del data[nullable]
         snip = {
                 'id': data.get('id'),
                 'channel': data.get('channel'),
@@ -82,7 +79,6 @@ class StorageBase(object):
 
     def del_announce(self, keys):
         pass
-
 
     def put_announce(self, data):
         data['id'] = self._gen_key(data)

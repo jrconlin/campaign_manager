@@ -64,6 +64,16 @@ class Storage(StorageBase):
             logging.error('Could not connect to db "%s"' % repr(e))
             raise e
 
+    def resolve(self, token):
+        if token is None:
+            return None
+        sql = 'select * from campaigns where id = :id'
+        items = self.engine.execute(text(sql), {'id': token})
+        if items.rowcount == 0:
+            return None
+        result = dict(zip(items.keys(), items.fetchone()))
+        return result
+
 
     def put_announce(self, data):
         if data.get('note') is None:
@@ -78,9 +88,11 @@ class Storage(StorageBase):
         # Really shouldn't allow "global" variables, but I know full well
         # that they're going to want them.
         params = {}
+        settings = self.config.get_settings()
         now = int(time.time())
         sql =("select id, note from %s where " % self.__tablename__ +
-            " start_time < %s and end_time > %s " % (now, now))
+            " coalesce(start_time, %s) < %s " % (now-1, now) +
+            "and coalesce(end_time, %s) > %s " % (now+1, now))
         if data.get('last_accessed'):
             sql += "and created > :last_accessed "
             params['last_accessed'] = int(data.get('last_accessed'))
@@ -106,9 +118,9 @@ class Storage(StorageBase):
             note = json.loads(item.note)
             note.update({'id': item.id,
                 'url':
-                    self.url_pattern % (
-                        self.config.get('redir_host', 'localhost'),
-                        self.config.get('redir_path', '/'),
+                    settings.get('redir.url', 'http://%s/%s%s') % (
+                        settings.get('redir.host', 'localhost'),
+                        settings.get('redir.path', 'r/'),
                         item.id)})
             result.append(note)
         return result

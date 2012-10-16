@@ -29,6 +29,9 @@ fstatic = Service(name='fstatic',
 logout = Service(name='logout',
         path='/logout/',
         description='logout')
+redir = Service(name='redir',
+        path='/r/{token}',
+        description='redir')
 
 
 _TMPL = os.path.join(os.path.dirname(__file__), 'templates')
@@ -243,3 +246,13 @@ def login(request, skipAuth=False):
         return login_page(request)
     # User Logged in
     return manage_announce(request)
+
+@redir.get()
+def handle_redir(request):
+    metlog = request.registry.get('metlog')
+    storage = request.registry.get('storage')
+    data = storage.resolve(request.matchdict.get('token'));
+    if data is None:
+        return err.HTTPNotFound
+    metlog.metlog(type='campaign', payload='redirect', fields=data)
+    return err.HTTPTemporaryRedirect(location=data['dest_url'])

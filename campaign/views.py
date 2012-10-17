@@ -1,3 +1,6 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 """ Cornice services.
 """
 from campaign import LOG
@@ -12,7 +15,7 @@ import os
 
 
 fetch = Service(name='fetch',
-        path='/announcements/{channel}/{version}/{platform}',
+        path='/announcements/{channel}/{platform}/{version}',
         description='Fetcher')
 fetchall = Service(name="fetchall",
         path='/announcements/',
@@ -30,7 +33,7 @@ logout = Service(name='logout',
         path='/logout/',
         description='logout')
 redir = Service(name='redir',
-        path='/r/{token}',
+        path='/redirect/{token}',
         description='redir')
 
 
@@ -113,19 +116,27 @@ def get_ideltime(request):
     return {'idle_time': int(request.params.get('idle', 0))}
 
 
-def authorized(email):
+def authorized(request, email):
+    if email is None:
+        return False
+    settings = request.registry.settings
     try:
-        for valid_domain in ['@mozilla.com', '@mozilla.org']:
-            if valid_domain in email:
+        domains = json.loads(settings.get('auth.valid.domains',
+            "['@mozilla.com', '@mozilla.org']"))
+        for valid_domain in domains:
+            if email.lower().endswith(valid_domain):
                 return True
-    except Exception,e:
+    except TypeError, e:
+        pass
+    except Exception, e:
+        import pdb; pdb.set_trace();
         pass
     return False
 
 
 @fetchall.get()
 def fetchall_snippets(request):
-    if not authorized(request.session.get('uid')):
+    if not authorized(request, request.session.get('uid')):
         return login(request)
     storage = request.registry.get('storage')
     tdata = {"notes": storage.get_all_announce()}
@@ -135,7 +146,7 @@ def fetchall_snippets(request):
 @author.get()
 @authorx.get()
 def admin_page(request, error=None):
-    if not authorized(request.session.get('uid')):
+    if not authorized(request, request.session.get('uid')):
         return login(request)
     tdata = fetchall_snippets(request)
     tdata['author'] = request.session['uid']
@@ -151,7 +162,7 @@ def admin_page(request, error=None):
 @author.post()
 @authorx.post()
 def manage_announce(request):
-    if not authorized(request.session.get('uid')):
+    if not authorized(request, request.session.get('uid')):
         return login(request)
     storage = request.registry.get('storage')
     session = request.session
@@ -183,7 +194,7 @@ def manage_announce(request):
 
 @author.delete()
 def del_announce(request):
-    if not authorized(request.session.get('uid')):
+    if not authorized(request, request.session.get('uid')):
         return login(request)
     storage = request.registry.get('storage')
     args = dict(request.params)
@@ -233,7 +244,7 @@ def login(request, skipAuth=False):
         email = auth.get_user_id(request)
         if email is None:
             return login_page(request)
-        if authorized(email):
+        if authorized(request, email):
             session = request.session
             session['uid'] = email
             session.persist()

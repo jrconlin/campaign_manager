@@ -120,7 +120,7 @@ class Storage(StorageBase):
                 'url':
                     settings.get('redir.url', 'http://%s/%s%s') % (
                         settings.get('redir.host', 'localhost'),
-                        settings.get('redir.path', 'r/'),
+                        settings.get('redir.path', 'redirect/'),
                         item.id)})
             result.append(note)
         return result

@@ -1,4 +1,4 @@
-APPNAME = geoip
+APPNAME = campaign
 VE = virtualenv
 PY = bin/python
 PI = bin/pip

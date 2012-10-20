@@ -8,6 +8,7 @@ all: build
 
 build:
 	$(VE) --no-site-packages .
+	bin/easy_install -U distribute
 	$(PI) install -r prod-reqs.txt
 	$(PY) setup.py build
 

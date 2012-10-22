@@ -125,7 +125,7 @@ def authorized(request, email):
     settings = request.registry.settings
     try:
         domains = json.loads(settings.get('auth.valid.domains',
-            "['@mozilla.com', '@mozilla.org']"))
+            '["@mozilla.com", "@mozilla.org"]'))
         for valid_domain in domains:
             if email.lower().endswith(valid_domain):
                 return True

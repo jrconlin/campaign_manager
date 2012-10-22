@@ -21,6 +21,7 @@ distribute==0.6.28
 docutils==0.9.1
 metlog-py==0.9.7
 -e git://github.com/mozilla-services/mozservices.git@f1310d1e9a07ea6ae7374deee5b1da4cbb8dea0a#egg=mozsvc-dev
+nose==1.2.1
 paster==0.7
 pyramid==1.4a2
 pyramid-beaker==0.7

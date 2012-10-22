@@ -32,6 +32,9 @@ fstatic = Service(name='fstatic',
 logout = Service(name='logout',
         path='/logout/',
         description='logout')
+redirl = Service(name='redir2',
+        path='/redirect/{locale}/{token}',
+        description='redir with locale')
 redir = Service(name='redir',
         path='/redirect/{token}',
         description='redir')
@@ -259,6 +262,7 @@ def login(request, skipAuth=False):
     return manage_announce(request)
 
 @redir.get()
+@redirl.get()
 def handle_redir(request):
     metlog = request.registry.get('metlog')
     storage = request.registry.get('storage')

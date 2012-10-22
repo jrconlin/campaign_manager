@@ -84,15 +84,24 @@ class Storage(StorageBase):
         self.session.commit()
         return self
 
-    def get_announce(self, data):
+    def get_announce(self, data, dbg=False):
         # Really shouldn't allow "global" variables, but I know full well
         # that they're going to want them.
         params = {}
         settings = self.config.get_settings()
-        now = int(time.time())
+        # The window allows the db to cache the query for the length of the
+        # window. This is because the database won't cache a query if it
+        # differs from a previous one. The timestamp will cause the query to
+        # not be cached.
+        window = int(settings.get('db.query_window', 1))
+        if window == 0:
+            window = 1
+        now = int(time.time() / window )
         sql =("select id, note from %s where " % self.__tablename__ +
-            " coalesce(start_time, %s) < %s " % (now-1, now) +
-            "and coalesce(end_time, %s) > %s " % (now+1, now))
+            " coalesce(round(start_time / %s), %s) < %s " % (window,
+                now-1, now) +
+            "and coalesce(round(end_time / %s), %s) > %s " % (window,
+                now+1, now))
         if data.get('last_accessed'):
             sql += "and created > :last_accessed "
             params['last_accessed'] = int(data.get('last_accessed'))
@@ -108,10 +117,13 @@ class Storage(StorageBase):
         if data.get('locale'):
             sql += "and coalesce(locale, :locale) = :locale "
             params['locale'] = data.get('locale')
-        if data.get('idle_time'):
-            sql += "and coalesce(idle_time, :idle_time) = :idle_time "
-            params['idle_time'] = data.get('idle_time')
+        if not data.get('idle_time'):
+            data['idle_time'] = 0
+        sql += "and coalesce(idle_time, 0) <= :idle_time "
+        params['idle_time'] = data.get('idle_time')
         sql += " order by id"
+        if (dbg):
+            print sql;
         items = self.engine.execute(text(sql), **dict(params))
         result = []
         for item in items:
@@ -139,5 +151,11 @@ class Storage(StorageBase):
         #TODO: how do you safely do an "in (keys)" call?
         sql = 'delete from %s where id = :key' % self.__tablename__
         for key in keys:
-            self.engine.execute(text(sql), {"key": key});
+            self.engine.execute(text(sql), {"key": key})
         self.session.commit()
+
+    def purge(self):
+        sql = 'delete from %s;' % self.__tablename__
+        self.engine.execute(text(sql))
+        self.session.commit()
+

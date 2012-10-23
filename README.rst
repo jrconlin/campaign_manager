@@ -13,6 +13,8 @@ Please make sure the following packages are installed on the system:
 gcc
 virtualenv
 sqlite
+mysql
+zmq
 
 Once those packages are successfully installed:
 

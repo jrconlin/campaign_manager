@@ -11,6 +11,7 @@ build:
 	$(VE) --no-site-packages .
 	$(PI) install -r prod-reqs.txt
 	$(PY) setup.py build
+	$(PY) setup.py install
 
 test:
 	$(NO) $(APPNAME)

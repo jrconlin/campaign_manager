@@ -3,6 +3,7 @@ VE = virtualenv
 PY = bin/python
 PI = bin/pip
 NO = bin/nosetests -s --with-xunit
+PS = bin/pserve
 
 all: build
 
@@ -14,3 +15,5 @@ build:
 test:
 	$(NO) $(APPNAME)
 
+run:
+	$(PS) campaign-local.ini

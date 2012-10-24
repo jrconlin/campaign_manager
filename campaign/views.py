@@ -3,7 +3,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 """ Cornice services.
 """
-from campaign import LOG
+from campaign import logger, LOG
 from campaign.auth.default import DefaultAuth
 from mozsvc.metrics import Service
 from mako.template import Template
@@ -17,10 +17,10 @@ import os
 fetch = Service(name='fetch',
         path='/announcements/{channel}/{platform}/{version}',
         description='Fetcher')
-fetchall = Service(name="fetchall",
+get_all = Service(name="get_all",
         path='/announcements/',
         description='Fetch Everything')
-authorx = Service(name='authorx',
+author2 = Service(name='author2',
         path='/author/{id}',
         description='Authoring Interface with record')
 author = Service(name='author',
@@ -38,19 +38,22 @@ redirl = Service(name='redir2',
 redir = Service(name='redir',
         path='/redirect/{token}',
         description='redir')
+root = Service(name='root',
+        path='/',
+        description='Default path')
 
 
 _TMPL = os.path.join(os.path.dirname(__file__), 'templates')
 
 
 def get_lang_loc(request):
-    header = request.headers.get('Accept-Language', 'en-us')
+    header = request.headers.get('Accept-Language', 'en-US')
     langloc = header.split(',')[0]
     if ('-' in langloc):
         (lang, loc) = langloc.split('-')
     else:
         (lang, loc) = (langloc, None)
-    return {'lang': lang, 'locale': loc}
+    return {'lang': lang.lower(), 'locale': loc.upper()}
 
 
 def get_last_accessed(request):
@@ -60,7 +63,13 @@ def get_last_accessed(request):
             last_accessed_str = request.headers.get('If-Modified-Since')
             last_accessed = strptime(last_accessed_str)
     except Exception, e:
-        import pdb; pdb.set_trace()
+        settings = request.registry.settings
+        if settings.get('dbg.traceback', False):
+            import traceback
+            traceback.print_exc()
+        if settings.get('dbg.break_unknown_exception', False):
+            import pdb
+            pdb.set_trace()
         request.registry['metlog'].metlog(type='campaign_error',
                 severity=LOG.ERROR,
                 payload='Exception: %s' % str(e))
@@ -68,13 +77,12 @@ def get_last_accessed(request):
 
 
 def log_fetched(request, reply):
-    logger = request.registry['metlog'].metlog
+    metlog  = request.registry['metlog'].metlog
     for item in reply['announcements']:
-        continue; ## NOOP
-        logger(type='campaign_log',
-                severity=LOG.INFO,
-                payload=json.dumps(item))
-        #metlogger.metlog('msgtype', payload='payload')
+        metlog(type='campaign_log',
+                severity=LOG.NOTICE,
+                payload='fetched',
+                fields=json.dumps(item))
         pass
 
 @fetch.get()
@@ -88,7 +96,7 @@ def get_snippets(request):
     last_accessed = get_last_accessed(request)
     args.update(last_accessed)
     reply = {'announcements': storage.get_announce(args)}
-    metlog.metlog(type='campaign', payload='fetch', fields=args)
+    metlog.metlog(type='campaign', payload='fetch_query', fields=args)
     if not len(reply):
         if last_accessed:
             raise err.HTTPNotModified
@@ -102,7 +110,8 @@ def get_template(name):
     name = os.path.join(_TMPL, '%s.mako' % name)
     try:
         return Template(filename=name)
-    except IOError:
+    except IOError, e:
+        logger.error(str(e))
         raise err.HTTPServerError
 
 
@@ -115,30 +124,31 @@ def get_file(name):
         raise err.HTTPNotFound
 
 
-def get_ideltime(request):
-    return {'idle_time': int(request.params.get('idle', 0))}
-
-
 def authorized(request, email):
     if email is None:
         return False
     settings = request.registry.settings
     try:
         domains = json.loads(settings.get('auth.valid.domains',
-            "['@mozilla.com', '@mozilla.org']"))
+            '["@mozilla.com", "@mozilla.org"]'))
         for valid_domain in domains:
             if email.lower().endswith(valid_domain):
                 return True
     except TypeError, e:
         pass
     except Exception, e:
-        import pdb; pdb.set_trace();
+        if settings.get('dbg.traceback', False):
+            import traceback
+            traceback.print_exc()
+        if settings.get('dbg.break_unknown_exception', False):
+            import pdb
+            pdb.set_trace()
         pass
     return False
 
 
-@fetchall.get()
-def fetchall_snippets(request):
+@get_all.get()
+def get_all_snippets(request):
     if not authorized(request, request.session.get('uid')):
         return login(request)
     storage = request.registry.get('storage')
@@ -147,11 +157,11 @@ def fetchall_snippets(request):
 
 
 @author.get()
-@authorx.get()
+@author2.get()
 def admin_page(request, error=None):
     if not authorized(request, request.session.get('uid')):
         return login(request)
-    tdata = fetchall_snippets(request)
+    tdata = get_all_snippets(request)
     tdata['author'] = request.session['uid']
     tdata['error'] = error
     template = get_template('main')
@@ -163,11 +173,12 @@ def admin_page(request, error=None):
 
 # sad to use post for DELETE, but JQuery doesn't add args to DELETE for bulk.
 @author.post()
-@authorx.post()
+@author2.post()
 def manage_announce(request):
     if not authorized(request, request.session.get('uid')):
         return login(request)
     storage = request.registry.get('storage')
+    settings = request.registry.settings
     session = request.session
     args = dict(request.params)
     err = None
@@ -182,7 +193,6 @@ def manage_announce(request):
         except err.HTTPOk:
             pass
         except err.HTTPNotFound, e:
-            import pdb; pdb.set_trace();
             pass
         return admin_page(request)
     if not args.get('author'):
@@ -190,7 +200,12 @@ def manage_announce(request):
     try:
         storage.put_announce(args)
     except Exception, e:
-        import pdb; pdb.set_trace()
+        if settings.get('dbg.traceback', False):
+            import traceback
+            traceback.print_exc()
+        if settings.get('dbg.break_unknown_exception', False):
+            import pdb
+            pdb.set_trace()
         # display error page.
         pass
     return admin_page(request);
@@ -213,26 +228,48 @@ def get_static(request):
             content_type = 'text/css')
     return response
 
+@root.get()
+def boot_to_author(request):
+    return err.HTTPTemporaryRedirect(location='/author/')
+
 @logout.delete()
 def logout_page(request):
     session = request.session
     if 'uid' in session:
         del session['uid']
-        session.persist()
-        session.save()
+        try:
+            session.persist()
+            session.save()
+        except AttributeError:
+            pass
     login_page(request)
 
 
 def login_page(request):
     session = request.session
-    template = get_template('login')
-    response = Response(str(template.render(audience=request.get('HTTP_HOST'))),
-        status=403)
-    if (session.get('uid')):
-        del(session['uid'])
-    session.persist()
-    session.save()
-    return response
+    try:
+        template = get_template('login')
+        response = Response(str(template.render(
+            audience=request.get('HTTP_HOST'))),
+            status=403)
+        if (session.get('uid')):
+            del(session['uid'])
+        try:
+            session.persist()
+            session.save()
+        except AttributeError:
+            pass # because testing
+        return response
+    except Exception, e:
+        settings = request.registry.settings
+        if settings.get('dbg.traceback', False):
+            import traceback
+            traceback.print_exc()
+        if settings.get('dbg.break_unknown_exception', False):
+            import pdb
+            pdb.set_trace()
+        logger.error(str(e))
+        raise err.HTTPServerError
 
 def login(request, skipAuth=False):
     params = dict(request.params.items())
@@ -250,13 +287,26 @@ def login(request, skipAuth=False):
         if authorized(request, email):
             session = request.session
             session['uid'] = email
-            session.persist()
-            session.save()
+            try:
+                session.persist()
+                session.save()
+            except AttributeError:
+                pass
         else:
             return login_page(request)
+    except IOError, e:
+        raise e
+    except err.HTTPServerError, e:
+        raise e
     except Exception, e:
-        import pdb; pdb.set_trace();
-        print ('missing credentials? %s', str(e))
+        settings = request.registry.settings
+        if settings.get('dbg.traceback', False):
+            import traceback
+            traceback.print_exc()
+        if settings.get('dbg.break_unknown_exception', False):
+            import pdb
+            pdb.set_trace()
+        logger.error(str(e))
         return login_page(request)
     # User Logged in
     return manage_announce(request)
@@ -268,6 +318,6 @@ def handle_redir(request):
     storage = request.registry.get('storage')
     data = storage.resolve(request.matchdict.get('token'));
     if data is None:
-        return err.HTTPNotFound
+        raise err.HTTPNotFound
     metlog.metlog(type='campaign', payload='redirect', fields=data)
     return err.HTTPTemporaryRedirect(location=data['dest_url'])

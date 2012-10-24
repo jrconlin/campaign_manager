@@ -17,7 +17,7 @@ class Campaign(Base):
     channel = Column('channel', String(24), index=True, nullable=True)
     version = Column('version', Float, index=True, nullable=True)
     platform = Column('platform', String(24), index=True, nullable=True)
-    lang = Column('lang', String(24), index=True)
+    lang = Column('lang', String(24), index=True, nullable=True)
     locale = Column('locale', String(24), index=True, nullable=True)
     start_time = Column('start_time', Integer, index=True)
     end_time = Column('end_time', Integer, index=True, nullable=True)
@@ -64,14 +64,36 @@ class Storage(StorageBase):
             logging.error('Could not connect to db "%s"' % repr(e))
             raise e
 
+    def health_check(self):
+        try:
+            healthy = True
+            with self.engine.begin() as conn:
+                conn.execute(("insert into %s (id, channel, platform, " %
+                    self.__tablename__) +
+                    "start_time, end_time, note, dest_url, author, created) " +
+                    "values ('test', 'test', 'test', 0, 0, 'test', 'test', " +
+                    "'test', 0)")
+                resp = conn.execute(("select id, note from %s where " %
+                    self.__tablename__) + "id='test';")
+                if resp.rowcount == 0:
+                    healthy = False
+                conn.execute("delete from %s where id='test';" %
+                        self.__tablename__)
+        except Exception, e:
+            import warnings
+            warnings.warn(str(e))
+            return False
+        return healthy
+
     def resolve(self, token):
         if token is None:
             return None
         sql = 'select * from campaigns where id = :id'
         items = self.engine.execute(text(sql), {'id': token})
-        if items.rowcount == 0:
+        row = items.fetchone()
+        if items.rowcount == 0 or row is None:
             return None
-        result = dict(zip(items.keys(), items.fetchone()))
+        result = dict(zip(items.keys(), row))
         return result
 
 
@@ -84,7 +106,7 @@ class Storage(StorageBase):
         self.session.commit()
         return self
 
-    def get_announce(self, data, dbg=False):
+    def get_announce(self, data):
         # Really shouldn't allow "global" variables, but I know full well
         # that they're going to want them.
         params = {}
@@ -122,8 +144,9 @@ class Storage(StorageBase):
         sql += "and coalesce(idle_time, 0) <= :idle_time "
         params['idle_time'] = data.get('idle_time')
         sql += " order by id"
-        if (dbg):
+        if (settings.get('dbg.show_query', False)):
             print sql;
+            print params;
         items = self.engine.execute(text(sql), **dict(params))
         result = []
         for item in items:

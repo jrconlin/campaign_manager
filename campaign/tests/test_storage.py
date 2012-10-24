@@ -3,14 +3,7 @@ import time
 import unittest2
 from pprint import pprint
 from campaign.storage.sql import Storage
-
-class TConfig:
-
-    def __init__(self, data):
-        self.settings = data
-
-    def get_settings(self):
-        return self.settings
+from campaign.tests import TConfig
 
 class TestStorage(unittest2.TestCase):
 
@@ -18,7 +11,7 @@ class TestStorage(unittest2.TestCase):
 
     test_announce = {
             'start_time': int(now - 300),
-            'end_time': int(now + 300),
+            'end_time': int(now + 3000),
             'lang': 'en',
             'locale': 'US',
             'note': 'Text Body',

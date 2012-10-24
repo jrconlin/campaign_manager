@@ -46,7 +46,8 @@ def self_diag(config):
     templatePath = os.path.join(os.path.dirname(__file__), 'templates',
             'login.mako')
     if not os.path.exists(templatePath):
-        warnings.warn('Could not find required template. Your install '
+        warnings.warn(('Could not find required template. %s\n Your install ' %
+                templatePath) +
                 'may be corrupt. Please reinstall.');
         bad |= True
     if not config.registry['storage'].health_check():

@@ -38,8 +38,7 @@ def self_diag(config):
     import sys
     import os
     bad = False
-    vernum = sys.version.split(' ')[0]
-    if not (vernum.startswith('2.6') or vernum.startswith('2.7')):
+    if sys.version_info[:3] < (2,5,0) or sys.version_info[:3] > (3,0,0):
         warnings.warn('Please run this code under version '
                 '2.6 or 2.7 of python.');
         bad |= True

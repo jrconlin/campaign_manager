@@ -11,8 +11,7 @@ build:
 	$(VE) --no-site-packages .
 	bin/easy_install -U distribute
 	$(PI) install -r prod-reqs.txt
-	$(PY) setup.py build
-	$(PY) setup.py install
+	$(PY) setup.py develop
 
 test:
 	$(NO) $(APPNAME)

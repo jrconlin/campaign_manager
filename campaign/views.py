@@ -7,7 +7,7 @@ from campaign import logger, LOG
 from campaign.auth.default import DefaultAuth
 from mozsvc.metrics import Service
 from mako.template import Template
-import pyramid.httpexceptions as err
+import pyramid.httpexceptions as http
 from time import strptime
 from webob import Response
 import json
@@ -99,9 +99,9 @@ def get_snippets(request):
     metlog.metlog(type='campaign', payload='fetch_query', fields=args)
     if not len(reply):
         if last_accessed:
-            raise err.HTTPNotModified
+            raise http.HTTPNotModified
         else:
-            raise err.HTTPNoContent
+            raise http.HTTPNoContent
     log_fetched(request, reply)
     return reply
 
@@ -112,7 +112,7 @@ def get_template(name):
         return Template(filename=name)
     except IOError, e:
         logger.error(str(e))
-        raise err.HTTPServerError
+        raise http.HTTPServerError
 
 
 def get_file(name):
@@ -121,10 +121,10 @@ def get_file(name):
         ff = open(name)
         return ff.read()
     except IOError:
-        raise err.HTTPNotFound
+        raise http.HTTPNotFound
 
 
-def authorized(request, email):
+def authorized(email, request):
     if email is None:
         return False
     settings = request.registry.settings
@@ -149,21 +149,30 @@ def authorized(request, email):
 
 @get_all.get()
 def get_all_snippets(request):
-    if not authorized(request, request.session.get('uid')):
-        return login(request)
+    if not login(request):
+        raise http.HTTPUnauthorized;
     storage = request.registry.get('storage')
-    tdata = {"notes": storage.get_all_announce()}
+    tdata = {"announcements": storage.get_all_announce()}
     return tdata
 
 
 @author.get()
 @author2.get()
 def admin_page(request, error=None):
-    if not authorized(request, request.session.get('uid')):
-        return login(request)
+    if request.registry.settings.get('auth.block_authoring', False):
+        raise http.HTTPNotFound()
+    if not login(request):
+        return login_page(request)
     tdata = get_all_snippets(request)
     tdata['author'] = request.session['uid']
     tdata['error'] = error
+    try:
+        if 'javascript' in request.accept_encoding:
+            if not error:
+                raise http.HTTPOk
+            raise http.HTTPConflict(json.dumps(error))
+    except AttributeError:
+       pass
     template = get_template('main')
     content_type = 'text/html'
     reply = template.render(**tdata)
@@ -175,30 +184,35 @@ def admin_page(request, error=None):
 @author.post()
 @author2.post()
 def manage_announce(request):
-    if not authorized(request, request.session.get('uid')):
-        return login(request)
+    args = request.params.copy()
+    if request.registry.settings.get('auth.block_authoring', False):
+        raise http.HTTPNotFound()
+    if not login(request):
+        return http.HTTPUnauthorized
+    else:
+        # Clean up the login info
+        try:
+            del args['assertion']
+            del args['audience']
+        except KeyError:
+            pass
     storage = request.registry.get('storage')
     settings = request.registry.settings
     session = request.session
-    args = dict(request.params)
     err = None
-    if not args.get('author'):
-        args['author'] = session.get('uid')
-    if 'assertion' in args:
-        """ Login request"""
-        return admin_page(request)
     if 'delete' in args or 'delete[]' in args:
         try:
             del_announce(request)
-        except err.HTTPOk:
+        except http.HTTPOk:
             pass
-        except err.HTTPNotFound, e:
+        except http.HTTPNotFound, e:
             pass
         return admin_page(request)
-    if not args.get('author'):
-        args['author'] = session.get('uid')
     try:
-        storage.put_announce(args)
+        if args != None and len(args) > 0:
+            if not args.get('author'):
+                args['author'] = session.get('uid')
+            storage.put_announce(args)
     except Exception, e:
         if settings.get('dbg.traceback', False):
             import traceback
@@ -207,19 +221,21 @@ def manage_announce(request):
             import pdb
             pdb.set_trace()
         # display error page.
+        err = {'code': 1,
+               'error': str(e)}
         pass
-    return admin_page(request);
+    return admin_page(request, err);
 
 @author.delete()
 def del_announce(request):
-    if not authorized(request, request.session.get('uid')):
-        return login(request)
+    if not login(request):
+        return login_page(request)
     storage = request.registry.get('storage')
     args = dict(request.params)
     deleteables = args.get('delete', args.get('delete[]', '')).split(',')
     if len(deleteables):
         storage.del_announce(deleteables)
-    raise err.HTTPOk
+    raise http.HTTPOk
 
 
 @fstatic.get()
@@ -230,7 +246,7 @@ def get_static(request):
 
 @root.get()
 def boot_to_author(request):
-    return err.HTTPTemporaryRedirect(location='/author/')
+    return http.HTTPTemporaryRedirect(location='/author/')
 
 @logout.delete()
 def logout_page(request):
@@ -245,8 +261,16 @@ def logout_page(request):
     login_page(request)
 
 
-def login_page(request):
+def login_page(request, error=None):
     session = request.session
+    try:
+        if 'javascript' in request.accept_encoding:
+            # Don't display the login page for javascript requests.
+            if not error:
+                raise http.HTTPForbidden
+            raise http.HTTPInternalServerError(str(error))
+    except AttributeError:
+        pass
     try:
         template = get_template('login')
         response = Response(str(template.render(
@@ -269,7 +293,7 @@ def login_page(request):
             import pdb
             pdb.set_trace()
         logger.error(str(e))
-        raise err.HTTPServerError
+        raise http.HTTPServerError
 
 def login(request, skipAuth=False):
     params = dict(request.params.items())
@@ -279,12 +303,15 @@ def login(request, skipAuth=False):
     except ValueError:
         pass
     try:
+        uid = request.session.get('uid')
+        if uid and authorized(uid, request):
+            return True;
         #config = request.registry.get('config', {})
         auth = request.registry.get('auth', DefaultAuth)
         email = auth.get_user_id(request)
         if email is None:
-            return login_page(request)
-        if authorized(request, email):
+            return False
+        if authorized(email, request):
             session = request.session
             session['uid'] = email
             try:
@@ -293,10 +320,10 @@ def login(request, skipAuth=False):
             except AttributeError:
                 pass
         else:
-            return login_page(request)
+            return False
     except IOError, e:
         raise e
-    except err.HTTPServerError, e:
+    except http.HTTPServerError, e:
         raise e
     except Exception, e:
         settings = request.registry.settings
@@ -307,9 +334,9 @@ def login(request, skipAuth=False):
             import pdb
             pdb.set_trace()
         logger.error(str(e))
-        return login_page(request)
+        return False
     # User Logged in
-    return manage_announce(request)
+    return True
 
 @redir.get()
 @redirl.get()
@@ -318,6 +345,6 @@ def handle_redir(request):
     storage = request.registry.get('storage')
     data = storage.resolve(request.matchdict.get('token'));
     if data is None:
-        raise err.HTTPNotFound
+        raise http.HTTPNotFound
     metlog.metlog(type='campaign', payload='redirect', fields=data)
-    return err.HTTPTemporaryRedirect(location=data['dest_url'])
+    raise http.HTTPTemporaryRedirect(location=data['dest_url'])

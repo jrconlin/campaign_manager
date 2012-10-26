@@ -52,7 +52,6 @@ class TestStorage(unittest2.TestCase):
                     'idle_time': 10, 'title': 'full_rec'}
                 ]
         # load the database
-        print self.now
         for update in updates:
             test = self.test_announce.copy()
             test.update(update)
@@ -80,12 +79,12 @@ class TestStorage(unittest2.TestCase):
         resolve_rec = announce[0]
 
         data = {'platform':'a', 'channel':'a'}
-        time.sleep(2)
+        time.sleep(self.now + 2 - int(time.time()))
         print "Wake check: %s " % (int(time.time()) - self.now)
         announce = self.storage.get_announce(data)
         self.assertEqual(len(announce), 3);
 
-        time.sleep(2)
+        time.sleep(self.now + 4 - int(time.time()))
         print "Expire check: %s " % (int(time.time()) - self.now)
         data = {'platform':'a', 'channel':'a'}
         announce = self.storage.get_announce(data)

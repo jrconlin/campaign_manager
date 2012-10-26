@@ -64,7 +64,7 @@ class ViewTest(unittest2.TestCase):
             'dest_url': 'http://example.org'},
         ]
 
-    def req(self, matchdict={}, user_id=None, headers=None):
+    def req(self, matchdict={}, user_id=None, headers=None, **kw):
         class Reg(dict):
 
             settings = {}
@@ -75,7 +75,7 @@ class ViewTest(unittest2.TestCase):
                     self.settings = settings
 
 
-        request = Request(headers=headers)
+        request = Request(headers=headers, **kw)
         request.registry=Reg(settings=self.config.get_settings())
         request.registry['storage'] = self.storage
         request.registry['metlog'] = FakeMetlog()
@@ -99,24 +99,24 @@ class ViewTest(unittest2.TestCase):
         self.storage.purge()
 
 
-    def test_get_snippets(self):
+    def test_get_announcements(self):
         # normal number
-        response = views.get_snippets(self.req(matchdict={'channel':'a',
+        response = views.get_announcements(self.req(matchdict={'channel':'a',
                 'platform': 'a', 'version': 0}))
         eq_(len(response['announcements']), 3)
         # idle number
-        response = views.get_snippets(self.req(matchdict={'channel':'a',
+        response = views.get_announcements(self.req(matchdict={'channel':'a',
                 'platform': 'a', 'version': 0, 'idle_time': 6}))
         eq_(len(response['announcements']), 4)
 
     def test_get_all(self):
         self.assertRaises(http.HTTPUnauthorized,
-                views.get_all_snippets,
+                views.get_all_announcements,
                 self.req())
         # scan for include.js or 'test="login"' id?
         # try with a 'valid' user id
         self.assertRaises(http.HTTPUnauthorized,
-                views.get_all_snippets,
+                views.get_all_announcements,
                 self.req(matchdict={}, user_id='invalid@example.com'))
         # try successful json
         req = self.req(matchdict={}, user_id='foo@mozilla.com')
@@ -125,7 +125,7 @@ class ViewTest(unittest2.TestCase):
             views.login(req)
         except http.HTTPOk:
             pass
-        response = views.get_all_snippets(req)
+        response = views.get_all_announcements(req)
         eq_(len(response['announcements']), 6)
 
     def test_handle_redir(self):
@@ -150,18 +150,21 @@ class ViewTest(unittest2.TestCase):
 
     def test_manage_announce(self):
         # test assertion post
-        req = self.req(matchdict={'channel':'c'}, user_id='foo@mozilla.com')
+        req = self.req(matchdict={'channel':'c', 'title': 'Goat',
+            'note': 'Ready for sacrifice'}, user_id='foo@mozilla.com')
         response = views.manage_announce(req)
         # test create
-        # test delete
-
-    #def test_delete_announce(self):
-        # test no login
-        # test delete
-
-    #def test_boot_to_author(self):
-        # test redir
-
-    #def test_logout(self):
-
-
+        time.sleep (2) # Give the db a second to write the record.
+        response = views.get_announcements(self.req(matchdict={'channel':'c'}))
+        goat = None
+        for record in response['announcements']:
+            if record['title'] == 'Goat':
+                goat = record
+                break
+        self.assertIsNotNone(goat)
+        req = self.req(params={'delete': goat['id']},
+            user_id='foo@mozilla.com')
+        self.assertRaises(http.HTTPOk, views.del_announce, req)
+        time.sleep (2) # Give the db a second to write the record.
+        req = self.req(matchdict={'token': goat['id']})
+        self.assertRaises(http.HTTPNotFound, views.handle_redir, req)

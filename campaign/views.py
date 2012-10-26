@@ -86,7 +86,7 @@ def log_fetched(request, reply):
         pass
 
 @fetch.get()
-def get_snippets(request):
+def get_announcements(request):
     """Returns campaigns in JSON."""
     # get the valid user information from the request.
     metlog = request.registry.get('metlog')
@@ -148,7 +148,7 @@ def authorized(email, request):
 
 
 @get_all.get()
-def get_all_snippets(request):
+def get_all_announcements(request):
     if not login(request):
         raise http.HTTPUnauthorized;
     storage = request.registry.get('storage')
@@ -163,7 +163,7 @@ def admin_page(request, error=None):
         raise http.HTTPNotFound()
     if not login(request):
         return login_page(request)
-    tdata = get_all_snippets(request)
+    tdata = get_all_announcements(request)
     tdata['author'] = request.session['uid']
     tdata['error'] = error
     try:
@@ -185,10 +185,11 @@ def admin_page(request, error=None):
 @author2.post()
 def manage_announce(request):
     args = request.params.copy()
+    args.update(request.matchdict)
     if request.registry.settings.get('auth.block_authoring', False):
         raise http.HTTPNotFound()
     if not login(request):
-        return http.HTTPUnauthorized
+        raise http.HTTPUnauthorized
     else:
         # Clean up the login info
         try:
@@ -232,6 +233,7 @@ def del_announce(request):
         return login_page(request)
     storage = request.registry.get('storage')
     args = dict(request.params)
+    args.update(request.matchdict)
     deleteables = args.get('delete', args.get('delete[]', '')).split(',')
     if len(deleteables):
         storage.del_announce(deleteables)
@@ -246,7 +248,7 @@ def get_static(request):
 
 @root.get()
 def boot_to_author(request):
-    return http.HTTPTemporaryRedirect(location='/author/')
+    raise http.HTTPTemporaryRedirect(location='/author/')
 
 @logout.delete()
 def logout_page(request):

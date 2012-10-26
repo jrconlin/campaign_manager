@@ -99,7 +99,7 @@ class Storage(StorageBase):
 
     def put_announce(self, data):
         if data.get('note') is None:
-            raise StorageException('Nothing to do.')
+            raise StorageException('Incomplete record. Skipping.')
         snip = self.normalize_announce(data)
         campaign = Campaign(**snip)
         self.session.add(campaign)

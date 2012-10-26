@@ -17,7 +17,7 @@ class Campaign(Base):
     channel = Column('channel', String(24), index=True, nullable=True)
     version = Column('version', Float, index=True, nullable=True)
     platform = Column('platform', String(24), index=True, nullable=True)
-    lang = Column('lang', String(24), index=True)
+    lang = Column('lang', String(24), index=True, nullable=True)
     locale = Column('locale', String(24), index=True, nullable=True)
     start_time = Column('start_time', Integer, index=True)
     end_time = Column('end_time', Integer, index=True, nullable=True)
@@ -64,20 +64,42 @@ class Storage(StorageBase):
             logging.error('Could not connect to db "%s"' % repr(e))
             raise e
 
+    def health_check(self):
+        try:
+            healthy = True
+            with self.engine.begin() as conn:
+                conn.execute(("insert into %s (id, channel, platform, " %
+                    self.__tablename__) +
+                    "start_time, end_time, note, dest_url, author, created) " +
+                    "values ('test', 'test', 'test', 0, 0, 'test', 'test', " +
+                    "'test', 0)")
+                resp = conn.execute(("select id, note from %s where " %
+                    self.__tablename__) + "id='test';")
+                if resp.rowcount == 0:
+                    healthy = False
+                conn.execute("delete from %s where id='test';" %
+                        self.__tablename__)
+        except Exception, e:
+            import warnings
+            warnings.warn(str(e))
+            return False
+        return healthy
+
     def resolve(self, token):
         if token is None:
             return None
         sql = 'select * from campaigns where id = :id'
         items = self.engine.execute(text(sql), {'id': token})
-        if items.rowcount == 0:
+        row = items.fetchone()
+        if items.rowcount == 0 or row is None:
             return None
-        result = dict(zip(items.keys(), items.fetchone()))
+        result = dict(zip(items.keys(), row))
         return result
 
 
     def put_announce(self, data):
         if data.get('note') is None:
-            raise StorageException('Nothing to do.')
+            raise StorageException('Incomplete record. Skipping.')
         snip = self.normalize_announce(data)
         campaign = Campaign(**snip)
         self.session.add(campaign)
@@ -89,10 +111,19 @@ class Storage(StorageBase):
         # that they're going to want them.
         params = {}
         settings = self.config.get_settings()
-        now = int(time.time())
+        # The window allows the db to cache the query for the length of the
+        # window. This is because the database won't cache a query if it
+        # differs from a previous one. The timestamp will cause the query to
+        # not be cached.
+        window = int(settings.get('db.query_window', 1))
+        if window == 0:
+            window = 1
+        now = int(time.time() / window )
         sql =("select id, note from %s where " % self.__tablename__ +
-            " coalesce(start_time, %s) < %s " % (now-1, now) +
-            "and coalesce(end_time, %s) > %s " % (now+1, now))
+            " coalesce(round(start_time / %s), %s) < %s " % (window,
+                now-1, now) +
+            "and coalesce(round(end_time / %s), %s) > %s " % (window,
+                now+1, now))
         if data.get('last_accessed'):
             sql += "and created > :last_accessed "
             params['last_accessed'] = int(data.get('last_accessed'))
@@ -108,10 +139,14 @@ class Storage(StorageBase):
         if data.get('locale'):
             sql += "and coalesce(locale, :locale) = :locale "
             params['locale'] = data.get('locale')
-        if data.get('idle_time'):
-            sql += "and coalesce(idle_time, :idle_time) = :idle_time "
-            params['idle_time'] = data.get('idle_time')
+        if not data.get('idle_time'):
+            data['idle_time'] = 0
+        sql += "and coalesce(idle_time, 0) <= :idle_time "
+        params['idle_time'] = data.get('idle_time')
         sql += " order by id"
+        if (settings.get('dbg.show_query', False)):
+            print sql;
+            print params;
         items = self.engine.execute(text(sql), **dict(params))
         result = []
         for item in items:
@@ -139,5 +174,11 @@ class Storage(StorageBase):
         #TODO: how do you safely do an "in (keys)" call?
         sql = 'delete from %s where id = :key' % self.__tablename__
         for key in keys:
-            self.engine.execute(text(sql), {"key": key});
+            self.engine.execute(text(sql), {"key": key})
         self.session.commit()
+
+    def purge(self):
+        sql = 'delete from %s;' % self.__tablename__
+        self.engine.execute(text(sql))
+        self.session.commit()
+

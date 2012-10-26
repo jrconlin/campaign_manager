@@ -11,8 +11,9 @@
     <head>
         <title>Please log in</title>
         <link rel="stylesheet" type="text/css" href="/style.css" />
+        <meta charset="utf-8" />
   </head>
-  <body>
+  <body data-test="login">
       <hgroup>
       <h2>Please Log in</h2>
       </hgroup>

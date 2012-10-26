@@ -81,6 +81,10 @@ class StorageBase(object):
 
     # customize for each memory model
 
+    def health_check(self):
+        # Is the current memory model working?
+        return False;
+
     def del_announce(self, keys):
         pass
 

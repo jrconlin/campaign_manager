@@ -2,6 +2,12 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-def main(global_config, **settings):
-    print 'starting app...'
-    pass
+class TConfig:
+
+    def __init__(self, data):
+        self.settings = data
+
+    def get_settings(self):
+        return self.settings
+
+

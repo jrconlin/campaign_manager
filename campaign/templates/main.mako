@@ -4,7 +4,7 @@
     import json
 
     config = pageargs.get('config', {})
-    notes = pageargs.get('notes', [])
+    announcements = pageargs.get('announcements', [])
     author = pageargs.get('author', 'UNKNOWN')
 
 %>
@@ -86,7 +86,7 @@
     time_format = '%Y %b %d - %H:%M:%S UTC'
     %>
     <!-- Wanna guess what ougth to be done as a rest call? hint: -->
-%for note in notes:
+%for note in announcements:
 <%
     dnote = dict(note);
     if dnote.get('start_time'):
@@ -112,7 +112,7 @@
 %>
 <div class="record row">
     <div class="delete"><input type="checkbox" value="${note.id}"></div>
-<div class="id">${dnote['id']}</div>
+    <div class="id"><a href="/redirect/${dnote['id']}">${dnote['id']}</a></div>
 <div class="created">${strftime(time_format, localtime(dnote['created']))}</div>
 <div class="start_time">${dnote['start_time']}</div>
 <div class="end_time">${dnote['end_time']}</div>

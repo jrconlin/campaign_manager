@@ -13,18 +13,23 @@ from webob import Response
 import json
 import os
 
+api_version = 1
 
 fetch = Service(name='fetch',
-        path='/announcements/{channel}/{platform}/{version}',
+        path='/announcements/%s/{product}/{channel}/{platform}/{version}' %
+            api_version,
         description='Fetcher')
+        #TODO:
+        #path  /announce/{api_version}/{product}/{channel}/ \
+        #        {platform}/{channel_version}
 get_all = Service(name="get_all",
         path='/announcements/',
         description='Fetch Everything')
 author2 = Service(name='author2',
-        path='/author/{id}',
+        path='/author/%s/{id}' % api_version,
         description='Authoring Interface with record')
 author = Service(name='author',
-        path='/author/',
+        path='/author/%s/' % api_version,
         description='Authoring Interface')
 fstatic = Service(name='fstatic',
         path='/{file}',
@@ -33,10 +38,10 @@ logout = Service(name='logout',
         path='/logout/',
         description='logout')
 redirl = Service(name='redir2',
-        path='/redirect/{locale}/{token}',
+        path='/redirect/%s/{locale}/{token}' % api_version,
         description='redir with locale')
 redir = Service(name='redir',
-        path='/redirect/{token}',
+        path='/redirect/%s/{token}' % api_version,
         description='redir')
 root = Service(name='root',
         path='/',
@@ -248,7 +253,7 @@ def get_static(request):
 
 @root.get()
 def boot_to_author(request):
-    raise http.HTTPTemporaryRedirect(location='/author/')
+    raise http.HTTPTemporaryRedirect(location='/author/%s/' % api_version)
 
 @logout.delete()
 def logout_page(request):

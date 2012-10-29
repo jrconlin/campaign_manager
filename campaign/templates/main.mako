@@ -3,6 +3,8 @@
     from time import (strftime, localtime)
     import json
 
+    vers = pageargs.get('version', 1)
+    land = pageargs.get('landing', '/author/%s/' % vers)
     config = pageargs.get('config', {})
     announcements = pageargs.get('announcements', [])
     author = pageargs.get('author', 'UNKNOWN')
@@ -20,7 +22,7 @@
 <button class="logout">Log out</button>
 <!-- yep, this should be a REST get and display call. -->
 </header>
-<form id="new_item" action="/author/" method="POST">
+<form id="new_item" action="${land}" method="POST">
 <h2>New Item</h2>
 <input type="hidden" name="author" value="${author}" />
 <fieldset class="times">
@@ -42,17 +44,8 @@
 </fieldset>
 <fieldset class="platform">
 <legend>On what?</legend>
-<label for="platform">Platform:</label><select name="platform">
-<option name="all" value="">All versions</option>
-%for platform in ['all','android','b2g','mac','pc']:
-<option name="${platform}">${platform}</option>
-%endfor
-</select>
-<label for="channel">Channel:</label><select name="channel">
-%for channel in ['all', 'firefox','beta','aurora','nightly']:
-<option name="${channel}">${channel}</option>
-%endfor
-</select>
+<label for="platform">Platform:</label><input type="text" name="platform" />
+<label for="channel">Channel:</label><input type="text" name="channel" />
 <label for="version">Version:</label><input type="text" name="version" />
 </fieldset>
 <button type="submit">Create</button>
@@ -112,7 +105,7 @@
 %>
 <div class="record row">
     <div class="delete"><input type="checkbox" value="${note.id}"></div>
-    <div class="id"><a href="/redirect/${dnote['id']}">${dnote['id']}</a></div>
+    <div class="id"><a href="/redirect/${vers}/${dnote['id']}">${dnote['id']}</a></div>
 <div class="created">${strftime(time_format, localtime(dnote['created']))}</div>
 <div class="start_time">${dnote['start_time']}</div>
 <div class="end_time">${dnote['end_time']}</div>
@@ -139,7 +132,7 @@
                 type: "DELETE",
                 contentType: "application/javascript",
                 success: function(data, status, xhr) {
-                    document.location = "/author/";
+                    document.location = "${land}";
                     },
                 error: function(xhr, status, error) {
                     console.error(status);
@@ -153,7 +146,7 @@
             alert('clicky');
             navigator.id.logout();
             $.cookie("campaign", null, {path: "/"});
-            document.location="/author/";
+            document.location="${land}";
         });
     });
     $("#delete").click(function() {
@@ -164,11 +157,11 @@
             }
         });
         console.debug(deleteables);
-        $.ajax({url: "/author/",
+        $.ajax({url: "${land}",
             type: "POST",
             data: {"delete": deleteables},
             success: function(data, status, xhr) {
-                document.location = "/author/";
+            document.location = "${land}";
             },
             error: function(xhr, status, error) {
                 alert(error);

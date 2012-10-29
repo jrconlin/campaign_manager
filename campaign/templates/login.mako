@@ -4,7 +4,8 @@
     # License, v. 2.0. If a copy of the MPL was not distributed with this
     # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-    land = pageargs.get('landing', '/author/')
+    vers = pageargs.get('version', '1')
+    land = pageargs.get('landing', '/author/%s/' % vers)
     audience = pageargs.get('audience', 'localhost')
 %>
 <html>
@@ -13,7 +14,7 @@
         <link rel="stylesheet" type="text/css" href="/style.css" />
         <meta charset="utf-8" />
   </head>
-  <body data-test="login">
+  <body>
       <hgroup>
       <h2>Please Log in</h2>
       </hgroup>

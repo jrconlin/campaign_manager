@@ -121,10 +121,6 @@ class ViewTest(unittest2.TestCase):
         # try successful json
         req = self.req(matchdict={}, user_id='foo@mozilla.com')
         req.accept_encoding = 'application/javascript'
-        try:
-            views.login(req)
-        except http.HTTPOk:
-            pass
         response = views.get_all_announcements(req)
         eq_(len(response['announcements']), 6)
 

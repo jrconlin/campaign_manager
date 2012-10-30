@@ -54,13 +54,14 @@ class StorageBase(object):
         now = time()
         data['start_time'] = self.parse_date(data.get('start_time', now))
         data['end_time'] = self.parse_date(data.get('end_time'))
-        for nullable in ('channel', 'platform', 'version'):
+        for nullable in ('product', 'channel', 'platform', 'version'):
             if (data.get(nullable) in ('all','','0')):
                 del data[nullable]
         snip = {
                 'id': data.get('id'),
                 'channel': data.get('channel'),
                 'version': data.get('version'),
+                'product': data.get('product'),
                 'platform': data.get('platform'),
                 'idle_time': data.get('idle_time', 0),
                 'lang': data.get('lang'),

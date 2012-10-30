@@ -26,6 +26,10 @@ class TestStorage(unittest2.TestCase):
     def tearDown(self):
         self.storage.purge()
 
+    def test_health_check(self):
+        result = self.storage.health_check()
+        self.assertEquals(result, True);
+
     def test_announcement(self):
         self.storage.put_announce(self.test_announce)
         items = self.storage.get_all_announce()

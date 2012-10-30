@@ -4,7 +4,7 @@
 """ Cornice services.
 """
 from campaign import logger, LOG
-from campaign.auth.default import DefaultAuth
+from decorators import checkService, authorizedOnly
 from mozsvc.metrics import Service
 from mako.template import Template
 import pyramid.httpexceptions as http
@@ -91,6 +91,7 @@ def log_fetched(request, reply):
         pass
 
 @fetch.get()
+@checkService
 def get_announcements(request):
     """Returns campaigns in JSON."""
     # get the valid user information from the request.
@@ -129,33 +130,9 @@ def get_file(name):
         raise http.HTTPNotFound
 
 
-def authorized(email, request):
-    if email is None:
-        return False
-    settings = request.registry.settings
-    try:
-        domains = json.loads(settings.get('auth.valid.domains',
-            '["@mozilla.com", "@mozilla.org"]'))
-        for valid_domain in domains:
-            if email.lower().endswith(valid_domain):
-                return True
-    except TypeError, e:
-        pass
-    except Exception, e:
-        if settings.get('dbg.traceback', False):
-            import traceback
-            traceback.print_exc()
-        if settings.get('dbg.break_unknown_exception', False):
-            import pdb
-            pdb.set_trace()
-        pass
-    return False
-
-
 @get_all.get()
+@authorizedOnly
 def get_all_announcements(request):
-    if not login(request):
-        raise http.HTTPUnauthorized;
     storage = request.registry.get('storage')
     tdata = {"announcements": storage.get_all_announce()}
     return tdata
@@ -166,7 +143,8 @@ def get_all_announcements(request):
 def admin_page(request, error=None):
     if request.registry.settings.get('auth.block_authoring', False):
         raise http.HTTPNotFound()
-    if not login(request):
+    auth = authorizedOnly(None)
+    if not auth.login(request):
         return login_page(request)
     tdata = get_all_announcements(request)
     tdata['author'] = request.session['uid']
@@ -188,20 +166,18 @@ def admin_page(request, error=None):
 # sad to use post for DELETE, but JQuery doesn't add args to DELETE for bulk.
 @author.post()
 @author2.post()
+@authorizedOnly
 def manage_announce(request):
     args = request.params.copy()
     args.update(request.matchdict)
     if request.registry.settings.get('auth.block_authoring', False):
         raise http.HTTPNotFound()
-    if not login(request):
-        raise http.HTTPUnauthorized
-    else:
-        # Clean up the login info
-        try:
-            del args['assertion']
-            del args['audience']
-        except KeyError:
-            pass
+    # Clean up the login info
+    try:
+        del args['assertion']
+        del args['audience']
+    except KeyError:
+        pass
     storage = request.registry.get('storage')
     settings = request.registry.settings
     session = request.session
@@ -233,9 +209,8 @@ def manage_announce(request):
     return admin_page(request, err);
 
 @author.delete()
+@authorizedOnly
 def del_announce(request):
-    if not login(request):
-        return login_page(request)
     storage = request.registry.get('storage')
     args = dict(request.params)
     args.update(request.matchdict)
@@ -302,51 +277,9 @@ def login_page(request, error=None):
         logger.error(str(e))
         raise http.HTTPServerError
 
-def login(request, skipAuth=False):
-    params = dict(request.params.items())
-    try:
-        if (request.json_body):
-            params.update(request.json_body.items())
-    except ValueError:
-        pass
-    try:
-        uid = request.session.get('uid')
-        if uid and authorized(uid, request):
-            return True;
-        #config = request.registry.get('config', {})
-        auth = request.registry.get('auth', DefaultAuth)
-        email = auth.get_user_id(request)
-        if email is None:
-            return False
-        if authorized(email, request):
-            session = request.session
-            session['uid'] = email
-            try:
-                session.persist()
-                session.save()
-            except AttributeError:
-                pass
-        else:
-            return False
-    except IOError, e:
-        raise e
-    except http.HTTPServerError, e:
-        raise e
-    except Exception, e:
-        settings = request.registry.settings
-        if settings.get('dbg.traceback', False):
-            import traceback
-            traceback.print_exc()
-        if settings.get('dbg.break_unknown_exception', False):
-            import pdb
-            pdb.set_trace()
-        logger.error(str(e))
-        return False
-    # User Logged in
-    return True
-
 @redir.get()
 @redirl.get()
+@checkService
 def handle_redir(request):
     metlog = request.registry.get('metlog')
     storage = request.registry.get('storage')

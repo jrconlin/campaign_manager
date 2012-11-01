@@ -12,6 +12,7 @@ from campaign.storage.sql import Storage
 from mozsvc.config import load_into_settings
 from mozsvc.middlewares import _resolve_name
 
+
 logger = logging.getLogger('campaign')
 
 
@@ -25,6 +26,7 @@ def get_group(group_name, dictionary):
             result[key[trim:]] = dictionary[key]
         return result
 
+
 def configure_from_settings(object_name, settings):
     config = dict(settings)
     if 'backend' not in config:
@@ -33,26 +35,27 @@ def configure_from_settings(object_name, settings):
     cls = _resolve_name(config.pop('backend'))
     return cls(**config)
 
+
 def self_diag(config):
     import warnings
     import sys
     import os
     bad = False
-    if sys.version_info[:3] < (2,5,0) or sys.version_info[:3] > (3,0,0):
+    if sys.version_info[:3] < (2, 5, 0) or sys.version_info[:3] > (3, 0, 0):
         warnings.warn('Please run this code under version '
-                '2.6 or 2.7 of python.');
+                      '2.6 or 2.7 of python.')
         bad |= True
     templatePath = os.path.join(os.path.dirname(__file__), 'templates',
-            'login.mako')
+                                'login.mako')
     if not os.path.exists(templatePath):
         warnings.warn(('Could not find required template. %s\n Your install ' %
-                templatePath) +
-                'may be corrupt. Please reinstall.');
+                       templatePath) + 'may be corrupt. Please reinstall.')
         bad |= True
     if not config.registry['storage'].health_check():
-        warnings.warn('Storage reported an error. Please check settings.');
+        warnings.warn('Storage reported an error. Please check settings.')
         bad |= True
-
+    if bad:
+        raise Exception('Failing self diagnostic.')
 
 
 def main(global_config, **settings):
@@ -64,7 +67,7 @@ def main(global_config, **settings):
     config.scan("campaign.views")
     config.registry['storage'] = Storage(config)
     config.registry['auth'] = configure_from_settings('auth',
-            settings['config'].get_map('auth'))
+                                  settings['config'].get_map('auth'))
     metlog_client = client_from_stream_config(
             open(global_config['__file__'], 'r'),
             'metlog')

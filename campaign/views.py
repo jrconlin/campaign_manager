@@ -82,13 +82,14 @@ def get_last_accessed(request):
 
 
 def log_fetched(request, reply):
-    metlog  = request.registry['metlog'].metlog
+    metlog = request.registry['metlog'].metlog
     for item in reply['announcements']:
         metlog(type='campaign_log',
                 severity=LOG.NOTICE,
                 payload='fetched',
                 fields=json.dumps(item))
         pass
+
 
 @fetch.get()
 @checkService
@@ -155,7 +156,7 @@ def admin_page(request, error=None):
                 raise http.HTTPOk
             raise http.HTTPConflict(json.dumps(error))
     except AttributeError:
-       pass
+        pass
     template = get_template('main')
     content_type = 'text/html'
     reply = template.render(**tdata)
@@ -191,7 +192,7 @@ def manage_announce(request):
             pass
         return admin_page(request)
     try:
-        if args != None and len(args) > 0:
+        if args is not None and len(args) > 0:
             if not args.get('author'):
                 args['author'] = session.get('uid')
             storage.put_announce(args)
@@ -206,7 +207,8 @@ def manage_announce(request):
         err = {'code': 1,
                'error': str(e)}
         pass
-    return admin_page(request, err);
+    return admin_page(request, err)
+
 
 @author.delete()
 @authorizedOnly
@@ -223,12 +225,14 @@ def del_announce(request):
 @fstatic.get()
 def get_static(request):
     response = Response(str(get_file(request.matchdict.get('file'))),
-            content_type = 'text/css')
+            content_type='text/css')
     return response
+
 
 @root.get()
 def boot_to_author(request):
     raise http.HTTPTemporaryRedirect(location='/author/%s/' % api_version)
+
 
 @logout.delete()
 def logout_page(request):
@@ -264,7 +268,7 @@ def login_page(request, error=None):
             session.persist()
             session.save()
         except AttributeError:
-            pass # because testing
+            pass  # because testing
         return response
     except Exception, e:
         settings = request.registry.settings
@@ -277,13 +281,14 @@ def login_page(request, error=None):
         logger.error(str(e))
         raise http.HTTPServerError
 
+
 @redir.get()
 @redirl.get()
 @checkService
 def handle_redir(request):
     metlog = request.registry.get('metlog')
     storage = request.registry.get('storage')
-    data = storage.resolve(request.matchdict.get('token'));
+    data = storage.resolve(request.matchdict.get('token'))
     if data is None:
         raise http.HTTPNotFound
     metlog.metlog(type='campaign', payload='redirect', fields=data)

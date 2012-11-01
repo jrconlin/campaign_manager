@@ -10,6 +10,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 
 Base = declarative_base()
 
+
 class Campaign(Base):
     __tablename__ = 'campaigns'
 
@@ -97,7 +98,6 @@ class Storage(StorageBase):
         result = dict(zip(items.keys(), row))
         return result
 
-
     def put_announce(self, data):
         if data.get('note') is None:
             raise StorageException('Incomplete record. Skipping.')
@@ -119,12 +119,12 @@ class Storage(StorageBase):
         window = int(settings.get('db.query_window', 1))
         if window == 0:
             window = 1
-        now = int(time.time() / window )
-        sql =("select id, note from %s where " % self.__tablename__ +
+        now = int(time.time() / window)
+        sql = ("select id, note from %s where " % self.__tablename__ +
             " coalesce(round(start_time / %s), %s) < %s " % (window,
-                now-1, now) +
+                now - 1, now) +
             "and coalesce(round(end_time / %s), %s) > %s " % (window,
-                now+1, now))
+                now + 1, now))
         if data.get('product'):
             sql += "and coalesce(product, :product) = :product "
             params['product'] = data.get('product')
@@ -149,8 +149,8 @@ class Storage(StorageBase):
         params['idle_time'] = data.get('idle_time')
         sql += " order by id"
         if (settings.get('dbg.show_query', False)):
-            print sql;
-            print params;
+            print sql
+            print params
         items = self.engine.execute(text(sql), **dict(params))
         result = []
         for item in items:
@@ -185,4 +185,3 @@ class Storage(StorageBase):
         sql = 'delete from %s;' % self.__tablename__
         self.engine.execute(text(sql))
         self.session.commit()
-

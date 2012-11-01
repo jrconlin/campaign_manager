@@ -4,20 +4,24 @@
 
 #import memcache
 from dateutil import parser
+from inspect import stack
 from time import time
 import math
 import json
 import string
 
+
 class StorageException(Exception):
     pass
+
 
 class StorageBase(object):
 
     def __init__(self, config, **kw):
-       self.config = config
-       self.alphabet = string.digits + string.letters
-       # self._mcache = memcache.Client(kw.get(servers,['localhost']))
+        self.config = config
+        self.alphabet = string.digits + string.letters
+        self.memory = {}
+        # self._mcache = memcache.Client(kw.get(servers,['localhost']))
 
     def _encode_num(self, num=0):
         if num == 0:
@@ -35,7 +39,7 @@ class StorageBase(object):
         """ Create a semi-arbitrary unique key for this record """
         nowbits = math.modf(time())
         return '%s%s' % (self._encode_num(int(nowbits[1])),
-                self._encode_num(int(nowbits[0]*100000)))
+                self._encode_num(int(nowbits[0] * 100000)))
 
     def parse_date(self, datestr):
         if not datestr:
@@ -45,7 +49,7 @@ class StorageBase(object):
         except ValueError:
             pass
         try:
-            return float (parser.parse(datestr).strftime('%s'))
+            return float(parser.parse(datestr).strftime('%s'))
         except ValueError:
             pass
         return None
@@ -55,10 +59,9 @@ class StorageBase(object):
         data['start_time'] = self.parse_date(data.get('start_time', now))
         data['end_time'] = self.parse_date(data.get('end_time'))
         for nullable in ('product', 'channel', 'platform', 'version'):
-            if (data.get(nullable) in ('all','','0')):
+            if (data.get(nullable) in ('all', '', '0')):
                 del data[nullable]
-        snip = {
-                'id': data.get('id'),
+        snip = {'id': data.get('id'),
                 'channel': data.get('channel'),
                 'version': data.get('version'),
                 'product': data.get('product'),
@@ -69,7 +72,7 @@ class StorageBase(object):
                 'note': json.dumps({
                     'title': data.get('title'),
                     'text': data.get('note')
-                    }),
+                }),
                 'dest_url': data.get('dest_url'),
                 'start_time': data.get('start_time', now),
                 'end_time': data.get('end_time'),
@@ -83,28 +86,31 @@ class StorageBase(object):
     # customize for each memory model
 
     def health_check(self):
+        """ Check that the current model is working correctly """
         # Is the current memory model working?
-        return False;
+        return False
 
     def del_announce(self, keys):
-        pass
+        """ Delete the set of announcements. Called from UI. """
+        raise StorageException('Undefined required method: ' %
+                stack()[0][3])
 
     def put_announce(self, data):
-        data['id'] = self._gen_key(data)
-        now = time()
-        expry = None
-        # auto expire if need be
-        if data.get('end_time') and data.get('end_time') > now:
-            expry = data.get('end_time') - now
-        #self._mcache.add(key, value=data.get('note'),
-        #   time=expry)
+        """ Store the announcement (normalizing if necessary) """
+        raise StorageException('Undefined required method: ' %
+                stack()[0][3])
 
     def get_announce(self, data):
-        key = self._gen_key(data)
-        # if there are less entries in memcache than the total number of
-        # possible iterations, just walk the list of items in memcache.
+        """ Retrieve matching announcements based on data """
+        raise StorageException('Undefined required method: ' %
+                stack()[0][3])
 
-        # else build a set of test keys to see if anything matches
-        # do a multi_get.
+    def get_all_announce(self, limit=None):
+        """ Fetch all announcements (used by the UI) """
+        raise StorageException('Undefined required method: ' %
+                stack()[0][3])
 
-        # finally, if there isn't a minimum set of elements, fetch from the db.
+    def purge(self):
+        """ Purge all listings (ONLY FOR TESTING) """
+        raise StorageException('Undefined required method: ' %
+                stack()[0][3])

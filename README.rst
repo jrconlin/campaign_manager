@@ -51,7 +51,7 @@ may change the port in use via the campaign-local.ini configuration file.
 Authoring
 ----
 
-https://$HOST:8080/author/
+https://$HOST:8080/author/1/
 
 To create new announcements, you will need to connect via Persona with a
 mozilla email address. If you wish to change this value, alter the
@@ -63,15 +63,47 @@ Once connected, you will be presented with a form. Empty values are considered
 Requesting Announcements
 ----
 
-https://$HOST:8080/announcements/$CHANNEL/$PLATFORM/$VERSION
+https://$HOST:8080/announcements/1/$PRODUCT/$CHANNEL/$PLATFORM/$VERSION
 
 An optional GET parameter of "idle" may be passed to indicate the number of
 days the platform has been idle.
 
+where:
+*Product*
+    name of the product for the notifications ('android')
+
+*CHANNEL*
+    Channel for the messages (e.g. 'firefox', 'aurora', 'nightly')
+
+*PLATFORM*
+    Specific device platform (e.g. 'b2g-utx')
+
+*VERSION*
+    Channel version to target
+
+Returns a JSON object containing
+
+ {'announcements': [{url: _AnnounceURL_,
+                     text: _AnnounceText_,
+                     id: _uniqueId_,
+                     title: _AnnounceTitle_},
+                     ...
+                   ]
+ }
+
 Redirection
 ---
-https://$HOST:8080/redirect/$TOKEN
-https://$HOST:8080/redirect/$LOCALE/$TOKEN
+https://$HOST:8080/redirect/1/$TOKEN
+https://$HOST:8080/redirect/1/$LOCALE/$TOKEN
 
 This will return a 302 to the correct destination for valid tokens, else 404
 
+where:
+
+*Token*
+    Unique id
+
+*Locale*
+    Optional local information (e.g. 'en-US')
+
+Returns a 302 to the actual URL.

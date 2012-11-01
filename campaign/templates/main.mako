@@ -44,6 +44,7 @@
 </fieldset>
 <fieldset class="platform">
 <legend>On what?</legend>
+<label for="product">Product</label><input type="text" name="product" value="android" />
 <label for="platform">Platform:</label><input type="text" name="platform" />
 <label for="channel">Channel:</label><input type="text" name="channel" />
 <label for="version">Version:</label><input type="text" name="version" />

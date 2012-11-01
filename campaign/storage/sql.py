@@ -10,13 +10,15 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 
 Base = declarative_base()
 
+
 class Campaign(Base):
     __tablename__ = 'campaigns'
 
     id = Column('id', String(25), primary_key=True)
     channel = Column('channel', String(24), index=True, nullable=True)
     version = Column('version', Float, index=True, nullable=True)
-    platform = Column('platform', String(24), index=True, nullable=True)
+    product = Column('product', String(50), index=True, nullable=True)
+    platform = Column('platform', String(50), index=True, nullable=True)
     lang = Column('lang', String(24), index=True, nullable=True)
     locale = Column('locale', String(24), index=True, nullable=True)
     start_time = Column('start_time', Integer, index=True)
@@ -68,11 +70,11 @@ class Storage(StorageBase):
         try:
             healthy = True
             with self.engine.begin() as conn:
-                conn.execute(("insert into %s (id, channel, platform, " %
-                    self.__tablename__) +
-                    "start_time, end_time, note, dest_url, author, created) " +
-                    "values ('test', 'test', 'test', 0, 0, 'test', 'test', " +
-                    "'test', 0)")
+                conn.execute(("insert into %s " % self.__tablename__) +
+                    "(id, product, channel, platform, start_time, end_time, " +
+                    "note, dest_url, author, created) " +
+                    "values ('test', 'test', 'test', 'test', 0, 0, 'test', " +
+                    "'test', 'test', 0)")
                 resp = conn.execute(("select id, note from %s where " %
                     self.__tablename__) + "id='test';")
                 if resp.rowcount == 0:
@@ -96,7 +98,6 @@ class Storage(StorageBase):
         result = dict(zip(items.keys(), row))
         return result
 
-
     def put_announce(self, data):
         if data.get('note') is None:
             raise StorageException('Incomplete record. Skipping.')
@@ -118,12 +119,15 @@ class Storage(StorageBase):
         window = int(settings.get('db.query_window', 1))
         if window == 0:
             window = 1
-        now = int(time.time() / window )
-        sql =("select id, note from %s where " % self.__tablename__ +
+        now = int(time.time() / window)
+        sql = ("select id, note from %s where " % self.__tablename__ +
             " coalesce(round(start_time / %s), %s) < %s " % (window,
-                now-1, now) +
+                now - 1, now) +
             "and coalesce(round(end_time / %s), %s) > %s " % (window,
-                now+1, now))
+                now + 1, now))
+        if data.get('product'):
+            sql += "and coalesce(product, :product) = :product "
+            params['product'] = data.get('product')
         if data.get('last_accessed'):
             sql += "and created > :last_accessed "
             params['last_accessed'] = int(data.get('last_accessed'))
@@ -145,8 +149,8 @@ class Storage(StorageBase):
         params['idle_time'] = data.get('idle_time')
         sql += " order by id"
         if (settings.get('dbg.show_query', False)):
-            print sql;
-            print params;
+            print sql
+            print params
         items = self.engine.execute(text(sql), **dict(params))
         result = []
         for item in items:
@@ -181,4 +185,3 @@ class Storage(StorageBase):
         sql = 'delete from %s;' % self.__tablename__
         self.engine.execute(text(sql))
         self.session.commit()
-

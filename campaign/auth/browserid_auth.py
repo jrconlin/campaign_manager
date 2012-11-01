@@ -12,7 +12,7 @@ class BrowserIDAuth(object):
 
     def __init__(self,
             **kw):
-        self.bid = browserid;
+        self.bid = browserid
         pass
 
     def create_user(self, assertion=None, **kw):

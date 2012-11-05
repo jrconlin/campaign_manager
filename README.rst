@@ -1,8 +1,8 @@
-CampainManager
+Campaign Manager
 =============
 
-Campaign Manager is a server that provides small HTML elements to be used
-by the firefox browser as part of marketing and outreach.
+Campaign Manager is a server that provides JSON fragments to be displayed by
+the Firefox browser as part of product marketing and outreach.
 
 Installing
 ----
@@ -13,6 +13,8 @@ Please make sure the following packages are installed on the system:
 gcc
 virtualenv
 sqlite
+mysql
+zmq
 
 Once those packages are successfully installed:
 

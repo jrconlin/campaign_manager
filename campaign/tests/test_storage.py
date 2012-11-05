@@ -46,8 +46,8 @@ class TestStorage(unittest2.TestCase):
         to exercise the search algo using a lot of records. """
         # really wish that update allowed chaining.
         updates = [{'lang': None, 'locale': None, 'title': 'Everyone'},
-            {'platform': 'a', 'channel': 'a', 'title': 'p: a;c: a'},
-            {'platform': 'b', 'channel': 'a', 'title': 'p: b;c: a'},
+            {'platform': 'a', 'channel': 'a', 'title': 'p:a;c:a'},
+            {'platform': 'b', 'channel': 'a', 'title': 'p:b;c:a'},
             {'platform': 'a', 'start_time': self.now + 1,
                 'end_time': self.now + 3, 'title': 'notyet'},
             {'platform': 'a', 'end_time': self.now - 5, 'title': 'tooold'},
@@ -69,6 +69,8 @@ class TestStorage(unittest2.TestCase):
         # only Everyone and p: a;c: a should be returned.
         print "P&C check:"
         self.assertEqual(len(announce), 2)
+        # Make sure the most specific entry is returned first.
+        self.assertEqual(announce[0].get('title'), 'p:a;c:a')
 
         data = {'platform': 'a', 'channel': 'a', 'idle_time': 15}
         announce = self.storage.get_announce(data)

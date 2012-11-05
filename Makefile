@@ -19,4 +19,3 @@ test:
 
 run:
 	$(PS) campaign-local.ini
-

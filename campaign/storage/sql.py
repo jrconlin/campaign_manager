@@ -15,6 +15,8 @@ class Campaign(Base):
     __tablename__ = 'campaigns'
 
     id = Column('id', String(25), primary_key=True)
+    priority = Column('priority', Integer, index=True)
+    specific = Column('specific', Integer, index=True)
     channel = Column('channel', String(24), index=True, nullable=True)
     version = Column('version', Float, index=True, nullable=True)
     product = Column('product', String(50), index=True, nullable=True)
@@ -101,6 +103,12 @@ class Storage(StorageBase):
     def put_announce(self, data):
         if data.get('note') is None:
             raise StorageException('Incomplete record. Skipping.')
+        specificity = 0
+        for col in ['lang', 'loc', 'platform',
+                'channel', 'version', 'idle_time']:
+            if col in data:
+                specificity += 1
+        data['specific'] = specificity
         snip = self.normalize_announce(data)
         campaign = Campaign(**snip)
         self.session.add(campaign)
@@ -147,10 +155,13 @@ class Storage(StorageBase):
             data['idle_time'] = 0
         sql += "and coalesce(idle_time, 0) <= :idle_time "
         params['idle_time'] = data.get('idle_time')
-        sql += " order by id"
+        sql += " order by priority desc, specific desc, created desc"
         if (settings.get('dbg.show_query', False)):
             print sql
             print params
+        if (settings.get('db.limit')):
+            sql += " limit :limit";
+            params['limit'] = settings.get('db.limit')
         items = self.engine.execute(text(sql), **dict(params))
         result = []
         for item in items:

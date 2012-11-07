@@ -78,6 +78,7 @@ class StorageBase(object):
                 'end_time': data.get('end_time'),
                 'author': data.get('author'),
                 'created': data.get('created', now),
+                'specific': data.get('specific'),
                 }
         if snip.get('id') is None:
             snip['id'] = self._gen_key(snip)

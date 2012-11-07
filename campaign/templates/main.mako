@@ -27,6 +27,7 @@
 <input type="hidden" name="author" value="${author}" />
 <fieldset class="times">
 <legend>When to show?</legend>
+<label for="priority">Priority(0=lowest):</label><input type="number" name="priority" value="0" />
 <label for="start_time">Start time:</label><input type="datetime-local" name="start_time" value="" />
 <label for="end_time">End time:</label><input type="datetime-local" name="end_time" value="" />
 <label for="idle_time">Idle time(days):</label><input type="number" name="idle_time" value="0" />
@@ -63,12 +64,14 @@
 <div class="head row">
 <div class="delete">Delete?</div>
 <div class="id">ID</div>
+<div class="priority">Priority</div>
 <div class="created">Created</div>
 <div class="start_time">Start Time</div>
 <div class="end_time">End Time</div>
 <div class="idle_time">Idle Time</div>
 <div class="lang">Language</div>
 <div class="locale">Locale</div>
+<div class="product">Product</div>
 <div class="platform">Platform</div>
 <div class="channel">Channel</div>
 <div class="version">Version</div>
@@ -107,12 +110,14 @@
 <div class="record row">
     <div class="delete"><input type="checkbox" value="${note.id}"></div>
     <div class="id"><a href="/redirect/${vers}/${dnote['id']}">${dnote['id']}</a></div>
+    <div class="priority">${dnote['priority']}</div>
 <div class="created">${strftime(time_format, localtime(dnote['created']))}</div>
 <div class="start_time">${dnote['start_time']}</div>
 <div class="end_time">${dnote['end_time']}</div>
 <div class="idle_time">${dnote['idle_time']} days</div>
 <div class="lang">${dnote['lang']}</div>
 <div class="locale">${dnote['locale']}</div>
+<div class="product">${dnote['product']}</div>
 <div class="platform">${dnote['platform']}</div>
 <div class="channel">${dnote['channel']}</div>
 <div class="version">${dnote['version']}</div>

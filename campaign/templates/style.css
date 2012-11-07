@@ -2,10 +2,10 @@
 body {font-family:Arial;}
 header {padding-bottom:1em;width:100%;border:1px solid #EEE;}
 header button {text-align:right;}
-#new_item label {display:inline-block;min-width:7em;text-align:right;}
+#new_item label {display:inline-block;min-width:5em;text-align:right;}
 #new_item label:before {content:"\A";white-space:pre; }
+#new_item .note label {display:block;text-align:left;}
 #existing .row {display:table-row;}
 #existing .head {font-weight: bold; }
 #existing .row div {display:table-cell;padding:2px;}
-
-
+input[type=number] {width:2em;}

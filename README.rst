@@ -13,8 +13,10 @@ Please make sure the following packages are installed on the system:
 gcc
 virtualenv
 sqlite
-mysql
-zmq
+libmysqlclient-dev
+mysql                #required for
+zmq                  #
+python-dev
 
 Once those packages are successfully installed:
 

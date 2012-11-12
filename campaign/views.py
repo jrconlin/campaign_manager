@@ -31,9 +31,6 @@ author2 = Service(name='author2',
 author = Service(name='author',
         path='/author/%s/' % api_version,
         description='Authoring Interface')
-fstatic = Service(name='fstatic',
-        path='/{file}',
-        description='hack')
 logout = Service(name='logout',
         path='/logout/',
         description='logout')
@@ -43,6 +40,13 @@ redirl = Service(name='redir2',
 redir = Service(name='redir',
         path='/redirect/%s/{token}' % api_version,
         description='redir')
+health = Service(name='health',
+        path='/status/',
+        description='Health Check')
+
+fstatic = Service(name='fstatic',
+        path='/{file}',
+        description='hack')
 root = Service(name='root',
         path='/',
         description='Default path')
@@ -293,3 +297,7 @@ def handle_redir(request):
         raise http.HTTPNotFound
     metlog.metlog(type='campaign', payload='redirect', fields=data)
     raise http.HTTPTemporaryRedirect(location=data['dest_url'])
+
+@health.get()
+def health_check(request):
+    raise http.HTTPOk

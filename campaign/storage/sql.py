@@ -52,10 +52,10 @@ class Storage(StorageBase):
             userpass = ''
             host = ''
             if (settings.get('db.user')):
-                userpass = '%s@%s' % (settings.get('db.user'),
+                userpass = '%s:%s@' % (settings.get('db.user'),
                         settings.get('db.password'))
             if (settings.get('db.host')):
-                host = ':%s' % settings.get('db.host')
+                host = '%s' % settings.get('db.host')
             dsn = '%s://%s%s/%s' % (
                     settings.get('db.type', 'mysql'),
                     userpass, host,

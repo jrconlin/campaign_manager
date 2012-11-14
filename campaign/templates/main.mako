@@ -18,7 +18,7 @@
 <body>
 <header>
 <h1>Campaign Admin Panel</h1>
-<div id="control">
+<div class="control">
 <button class="logout">Log out</button>
 <!-- yep, this should be a REST get and display call. -->
 </header>

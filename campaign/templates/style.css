@@ -22,7 +22,7 @@ font-style: normal;
 font-family: 'Open Sans Light';
 src: url('//www.mozilla.org/img/fonts/OpenSans-Light-webfont.eot');
 src: url('//www.mozilla.org/img/fonts/OpenSans-Light-webfont.eot?#iefix') format('embedded-opentype'),
-url('//www.mozilla.org/img/fonts/OpenSans-Light-webfont.woff') format('woff'),
+url('//www.mozilla.org/img/fonts/OpenSans-Ligh-webfont.woff') format('woff'),
 url('//www.mozilla.org/img/fonts/OpenSans-Light-webfont.ttf') format('truetype'),
 url('//www.mozilla.org/img/fonts/OpenSans-Light-webfont.svg#OpenSansLight') format('svg');
 font-weight: normal;
@@ -33,9 +33,9 @@ html {height: 100%}
 body {font-family:'Open Sans Light',sans-serif;
       background-color:rgb(51,51,51);
       color: rgb(72,72,72);
-      margin:1em;
       line-height:20px;
       font-size:14px;
+      margin: 0 1em;
       background-repeat: repeat-x;
       background-image: linear-gradient(rgb(215, 211, 200), rgb(246, 244, 236));
 }
@@ -45,15 +45,33 @@ h2 {font-size:32px;letter-spacing:-1px;line-height:100%}
 h3 {font-size: 28px;letter-spacing:-0.5px;line-height:100%}
 a {color: #0095DD;}
 a:hover {color:#00539F;transition:.5s;}
-.control{position:absolute; top:0; right:2em;}
-header {position:relative; padding-bottom:1em;width:100%;}
+.control{position:absolute; top:-.5em; right:2em;}
+header {position:relative; margin:1em 0 1em 0;width:100%;}
 header button {text-align:right;}
-#new_item label {display:inline-block;min-width:5em;text-align:right;line-height:100%;}
+#new_item fieldset{padding: 2px;}
+#new_item label {display:inline-block;min-width:5em;text-align:right;line-height:90%;vertical-align:middle;}
 #new_item label:before {content:"\A";white-space:pre; }
 #new_item .note label {display:block;text-align:left;}
-#new_item input[name=note] {width:30em;}
+#new_item input{
+height: 20px;
+background: none repeat scroll 0% 0% rgb(255, 255, 255);
+border-color: rgb(178, 178, 178);
+border-style: solid;
+border-width: 1px;
+font-size: 12px;
+font-family: 'Open Sans',sans-serif;
+padding: 3.33333px 6.66667px;
+border-radius: 3px 3px 3px 3px;
+box-shadow: 0px 1px rgba(255, 255, 255, 0.5);
+transition: all 0.1s linear 0s;
+}
+#new_item input:hover, #new_item input:focus {
+border-color: rgb(66, 164, 224);
+box-shadow: 0px 0px 0px 2px rgba(73, 173, 227, 0.4);
+transition: all 0.1s linear 0s;
+}
 #select_all,#clear  {display:none;}
-#existing {position:relative;}
+#existing {position:relative;margin-top:2em;}
 #existing .row {display:table-row;}
 #existing .row:nth-child(even){background-color:rgba(255,255,255,0.50);}
 #existing .head {font-weight: bold; }
@@ -62,4 +80,32 @@ header button {text-align:right;}
 #existing .head  {text-align:center; vertical-align:top;}
 #existing .row .delete {text-align:center;vertical-align:middle;}
 #existing .head .delete {text-align:center; vertical-align:top;}
-input[type=number] {width:2em;}
+#new_item input[name=note] {width:30em;}
+#new_item input[type=number] {width:2em;}
+.button, .button:link, .button:visited {
+display: inline-block;
+border-radius: 0.25em 0.25em 0.25em 0.25em;
+box-shadow: 0px 2px 0px 0px rgba(0, 0, 0, 0.1), 0px -2px 0px 0px rgba(0, 0, 0, 0.2) inset;
+background-color: rgb(39, 97, 149);
+background-repeat: repeat-x;
+background-image: linear-gradient(rgb(60, 136, 204), rgb(39, 97, 149));
+color: rgb(255, 255, 255);
+text-align: center;
+font-size: 14px;
+padding: 0px 20px;
+height: 40px;
+line-height: 40px;
+text-decoration: none;
+min-width: 100px;
+border: 0px none;
+text-shadow: 0px 1px 0px rgba(0, 0, 0, 0.25);
+font-family: 'Open Sans',sans-serif;
+transition: all 0.25s linear 0s;
+}
+.button:hover, .button:link:hover, .button:visited:hover, .button.hover, .button.hover:link, .button.hover:visited, .button:focus, .button:link:focus, .button:visited:focus, .button.focus, .button.focus:link, .button.focus:visited {
+box-shadow: 0px 2px 0px 0px rgba(0, 0, 0, 0.1), 0px -2px 0px 0px rgba(0, 0, 0, 0.2) inset, 0px 12px 24px 2px rgb(48, 137, 216) inset;
+color: rgb(255, 255, 255);
+text-decoration: none;
+transition: all 0.25s linear 0s;
+}
+#browserid {margin: 1em;}

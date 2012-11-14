@@ -14,7 +14,6 @@ class checkService(object):
 
     def __init__(self, fn=None):
         self.fn = fn
-        pass
 
     def checkService(self, req):
         if req.registry.settings.get('service_until', None):

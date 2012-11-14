@@ -6,6 +6,7 @@
 from dateutil import parser
 from inspect import stack
 from time import time
+from campaign.utils import as_id
 import math
 import json
 import string
@@ -24,16 +25,7 @@ class StorageBase(object):
         # self._mcache = memcache.Client(kw.get(servers,['localhost']))
 
     def _encode_num(self, num=0):
-        if num == 0:
-            return self.alphabet[0]
-        barray = []
-        base = len(self.alphabet)
-        while num:
-            remain = num % base
-            num = num // base
-            barray.append(self.alphabet[remain])
-        barray.reverse
-        return ''.join(barray)
+        return as_id(num)
 
     def _gen_key(self, data):
         """ Create a semi-arbitrary unique key for this record """

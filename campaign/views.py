@@ -108,7 +108,7 @@ def get_announcements(request):
     args.update(last_accessed)
     reply = {'announcements': storage.get_announce(args)}
     metlog.metlog(type='campaign', payload='fetch_query', fields=args)
-    if not len(reply):
+    if not len(reply['announcements']):
         if last_accessed:
             raise http.HTTPNotModified
         else:

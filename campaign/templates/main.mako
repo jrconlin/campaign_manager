@@ -12,14 +12,17 @@
 %>
 <html>
 <head>
-    <title>Welcome ${author}</title>
+<title>Welcome ${author}</title>
 <link rel="stylesheet" type="text/css" href="/style.css" />
+<link rel="stylesheet" type="text/css" href="http://www.mozilla.org/tabzilla/media/css/tabzilla.css" />
 </head>
 <body>
+<!-- This had <blank>ing better not be user facing, so skipping tabzilla -->
+<!--a href="http://www.mozilla.org/" id="tabzilla">mozilla</a--!>
 <header>
 <h1>Campaign Admin Panel</h1>
 <div class="control">
-<button class="logout">Log out</button>
+<button class="button logout">Log out</button>
 <!-- yep, this should be a REST get and display call. -->
 </header>
 <form id="new_item" action="${land}" method="POST">
@@ -50,15 +53,15 @@
 <label for="channel">Channel:</label><input type="text" name="channel" />
 <label for="version">Version:</label><input type="text" name="version" />
 </fieldset>
-<button type="submit">Create</button>
-<button type="clear">Clear</button>
+<button class="button" type="submit">Create</button>
+<button class="button" type="clear">Clear</button>
 </form>
 <div id="existing">
 <h2>Existing Records</h2>
 <div class="control">
-<button id="select_all" name="select_all">Select all</button>
-<button id="clear" name="clear_all">Clear selected</button>
-<button id="delete" name="delete">Delete Selected</button>
+<button class="button" id="select_all" name="select_all">Select all</button>
+<button class="button" id="clear" name="clear_all">Clear selected</button>
+<button class="button" id="delete" name="delete">Delete Selected</button>
 </div>
 <div id="data">
 <div class="head row">
@@ -108,9 +111,9 @@
         dnote['version'] = '<i>All versions</i>'
 %>
 <div class="record row">
-    <div class="delete"><input type="checkbox" value="${note.id}"></div>
-    <div class="id"><a href="/redirect/${vers}/${dnote['id']}">${dnote['id']}</a></div>
-    <div class="priority">${dnote['priority']}</div>
+<div class="delete"><input type="checkbox" value="${note.id}"></div>
+<div class="id"><a href="/redirect/${vers}/${dnote['id']}">${dnote['id']}</a></div>
+<div class="priority">${dnote['priority']}</div>
 <div class="created">${strftime(time_format, localtime(dnote['created']))}</div>
 <div class="start_time">${dnote['start_time']}</div>
 <div class="end_time">${dnote['end_time']}</div>
@@ -149,7 +152,6 @@
     });
     $("#bidjs").ready(function() {
         $(".logout").click(function(){
-            alert('clicky');
             navigator.id.logout();
             $.cookie("campaign", null, {path: "/"});
             document.location="${land}";
@@ -175,4 +177,5 @@
         });
     });
 </script>
+<!--script src="http://www.mozilla.org/tabzilla/media/js/tabzilla.js"></script -->
 </html>

@@ -3,7 +3,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 """ Cornice services.
 """
-from campaign import logger, LOG
+from campaign import LOG
 from decorators import checkService, authorizedOnly
 from mozsvc.metrics import Service
 from mako.template import Template
@@ -12,18 +12,19 @@ from time import strptime
 from webob import Response
 import json
 import os
+import logging
 
 api_version = 1
 
 fetch = Service(name='fetch',
-        path='/announcements/%s/{product}/{channel}/{platform}/{version}' %
+        path='/announce/%s/{product}/{channel}/{version}/{platform}' %
             api_version,
         description='Fetcher')
         #TODO:
         #path  /announce/{api_version}/{product}/{channel}/ \
-        #        {platform}/{channel_version}
+        #        {channel_version}/{platform}
 get_all = Service(name="get_all",
-        path='/announcements/',
+        path='/announce/',
         description='Fetch Everything')
 author2 = Service(name='author2',
         path='/author/%s/{id}' % api_version,
@@ -51,6 +52,7 @@ root = Service(name='root',
         path='/',
         description='Default path')
 
+logger = logging.getLogger('root')
 
 _TMPL = os.path.join(os.path.dirname(__file__), 'templates')
 
@@ -79,20 +81,18 @@ def get_last_accessed(request):
         if settings.get('dbg.break_unknown_exception', False):
             import pdb
             pdb.set_trace()
-        request.registry['metlog'].metlog(type='campaign_error',
-                severity=LOG.ERROR,
-                payload='Exception: %s' % str(e))
+        request.registry['logger'].log(type='campaign_error',
+                                       severity=LOG.ERROR,
+                                       msg='Exception: %s' % str(e))
     return {'last_accessed': last_accessed}
 
 
 def log_fetched(request, reply):
-    metlog = request.registry['metlog'].metlog
-    for item in reply['announcements']:
-        metlog(type='campaign_log',
-                severity=LOG.NOTICE,
-                payload='fetched',
-                fields=json.dumps(item))
-        pass
+    logger = request.registry['logger']
+    logger.log(type='campaign_log',
+               severity=LOG.NOTICE,
+               msg='fetched',
+               fields=json.dumps(reply['announcements']))
 
 
 @fetch.get()
@@ -100,14 +100,15 @@ def log_fetched(request, reply):
 def get_announcements(request):
     """Returns campaigns in JSON."""
     # get the valid user information from the request.
-    metlog = request.registry.get('metlog')
+    logger = request.registry.get('logger')
     storage = request.registry.get('storage')
     args = request.matchdict
     args.update(get_lang_loc(request))
     last_accessed = get_last_accessed(request)
     args.update(last_accessed)
     reply = {'announcements': storage.get_announce(args)}
-    metlog.metlog(type='campaign', payload='fetch_query', fields=args)
+    logger.log(type='campaign', severity=LOG.NOTICE,
+               msg='fetch_query', fields=args)
     if not len(reply['announcements']):
         if last_accessed:
             raise http.HTTPNotModified
@@ -229,7 +230,7 @@ def del_announce(request):
 @fstatic.get()
 def get_static(request):
     response = Response(str(get_file(request.matchdict.get('file'))),
-            content_type='text/css')
+                        content_type='text/css')
     return response
 
 
@@ -282,7 +283,7 @@ def login_page(request, error=None):
         if settings.get('dbg.break_unknown_exception', False):
             import pdb
             pdb.set_trace()
-        logger.error(str(e))
+        request.registry['logger'].log(str(e), severity=LOG.ERROR)
         raise http.HTTPServerError
 
 
@@ -290,13 +291,15 @@ def login_page(request, error=None):
 @redirl.get()
 @checkService
 def handle_redir(request):
-    metlog = request.registry.get('metlog')
+    logger = request.registry.get('logger')
     storage = request.registry.get('storage')
     data = storage.resolve(request.matchdict.get('token'))
     if data is None:
         raise http.HTTPNotFound
-    metlog.metlog(type='campaign', payload='redirect', fields=data)
+    logger.log(type='campaign', severity=LOG.INFORMATIONAL,
+               msg='redirect', fields=data)
     raise http.HTTPTemporaryRedirect(location=data['dest_url'])
+
 
 @health.get()
 def health_check(request):

@@ -105,9 +105,11 @@ class Storage(StorageBase):
             raise StorageException('Incomplete record. Skipping.')
         specificity = 0
         for col in ['lang', 'loc', 'platform',
-                'channel', 'version', 'idle_time']:
-            if len(data.get(col, '')):
+                'channel', 'version']:
+            if len(str(data.get(col,''))):
                 specificity += 1
+        if data.get('idle_time') and int(data.get('idle_time')) != 0:
+            specificity += 1
         data['specific'] = specificity
         snip = self.normalize_announce(data)
         campaign = Campaign(**snip)
@@ -137,7 +139,7 @@ class Storage(StorageBase):
         if data.get('last_accessed'):
             sql += "and created > :last_accessed "
             params['last_accessed'] = int(data.get('last_accessed'))
-        for field in ['product', 'platform', 'channel', 'version', 'lang', 
+        for field in ['product', 'platform', 'channel', 'version', 'lang',
                       'locale']:
             if data.get(field):
                 sql += "and coalesce(%s, :%s) = :%s " % (field, field, field)
@@ -146,7 +148,7 @@ class Storage(StorageBase):
             data['idle_time'] = 0
         sql += "and coalesce(idle_time, 0) <= :idle_time "
         params['idle_time'] = data.get('idle_time')
-        # RDS doesn't like multiple order bys, sqllite doesn't like concat. 
+        # RDS doesn't like multiple order bys, sqllite doesn't like concat.
         sql += " order by priority desc"
         if (settings.get('dbg.show_query', False)):
             print sql
@@ -171,8 +173,8 @@ class Storage(StorageBase):
             result.append(note)
         def sorter(item):
             "sort items by priority, specific, created"
-            key = "%04d-%s-%015s" % (item['priority'] or 0, 
-                                      (10 - item['specific']), 
+            key = "%04d-%s-%015s" % (item['priority'] or 0,
+                                      (10 - item['specific']),
                                       item['created'])
             return key
 

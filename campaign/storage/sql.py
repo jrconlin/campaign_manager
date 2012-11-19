@@ -2,7 +2,7 @@ import logging
 import json
 import time
 from . import StorageBase, StorageException
-from sqlalchemy import (Column, Integer, String, Text, Float,
+from sqlalchemy import (Column, Integer, String, Text,
         create_engine, MetaData, text)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import scoped_session, sessionmaker
@@ -18,7 +18,7 @@ class Campaign(Base):
     priority = Column('priority', Integer, index=True)
     specific = Column('specific', Integer, index=True)
     channel = Column('channel', String(24), index=True, nullable=True)
-    version = Column('version', Float, index=True, nullable=True)
+    version = Column('version', String(30), index=True, nullable=True)
     product = Column('product', String(50), index=True, nullable=True)
     platform = Column('platform', String(50), index=True, nullable=True)
     lang = Column('lang', String(24), index=True, nullable=True)
@@ -105,9 +105,11 @@ class Storage(StorageBase):
             raise StorageException('Incomplete record. Skipping.')
         specificity = 0
         for col in ['lang', 'loc', 'platform',
-                'channel', 'version', 'idle_time']:
-            if col in data:
+                'channel', 'version']:
+            if len(str(data.get(col,''))):
                 specificity += 1
+        if data.get('idle_time') and int(data.get('idle_time')) != 0:
+            specificity += 1
         data['specific'] = specificity
         snip = self.normalize_announce(data)
         campaign = Campaign(**snip)
@@ -128,34 +130,26 @@ class Storage(StorageBase):
         if window == 0:
             window = 1
         now = int(time.time() / window)
-        sql = ("select id, note from %s where " % self.__tablename__ +
+        sql = ("select id, note, priority, `specific`, "
+                "created from %s where " % self.__tablename__ +
             " coalesce(round(start_time / %s), %s) < %s " % (window,
                 now - 1, now) +
             "and coalesce(round(end_time / %s), %s) > %s " % (window,
                 now + 1, now))
-        if data.get('product'):
-            sql += "and coalesce(product, :product) = :product "
-            params['product'] = data.get('product')
         if data.get('last_accessed'):
             sql += "and created > :last_accessed "
             params['last_accessed'] = int(data.get('last_accessed'))
-        if data.get('platform'):
-            sql += "and coalesce(platform, :platform) = :platform "
-            params['platform'] = data.get('platform')
-        if data.get('channel'):
-            sql += "and coalesce(channel, :channel) = :channel "
-            params['channel'] = data.get('channel')
-        if data.get('lang'):
-            sql += "and coalesce(lang, :lang) = :lang "
-            params['lang'] = data.get('lang')
-        if data.get('locale'):
-            sql += "and coalesce(locale, :locale) = :locale "
-            params['locale'] = data.get('locale')
+        for field in ['product', 'platform', 'channel', 'version', 'lang',
+                      'locale']:
+            if data.get(field):
+                sql += "and coalesce(%s, :%s) = :%s " % (field, field, field)
+                params[field] = data.get(field)
         if not data.get('idle_time'):
             data['idle_time'] = 0
         sql += "and coalesce(idle_time, 0) <= :idle_time "
         params['idle_time'] = data.get('idle_time')
-        sql += " order by priority desc, specific desc, created desc"
+        # RDS doesn't like multiple order bys, sqllite doesn't like concat.
+        sql += " order by priority desc"
         if (settings.get('dbg.show_query', False)):
             print sql
             print params
@@ -166,14 +160,33 @@ class Storage(StorageBase):
         result = []
         for item in items:
             note = json.loads(item.note)
-            note.update({'id': item.id,
+            note.update({
+                'created': item.created,
+                'specific': item.specific,
+                'priority': item.priority or 0,
+                'id': item.id,
                 'url':
                     settings.get('redir.url', 'http://%s/%s%s') % (
                         settings.get('redir.host', 'localhost'),
                         settings.get('redir.path', 'redirect/'),
                         item.id)})
             result.append(note)
-        return result
+        def sorter(item):
+            "sort items by priority, specific, created"
+            key = "%04d-%s-%015s" % (item['priority'] or 0,
+                                      (10 - item['specific']),
+                                      item['created'])
+            return key
+
+        def clean(items):
+            " strip out sorting fields"
+            for item in items:
+                del item['specific']
+                del item['priority']
+                del item['created']
+            return items
+
+        return clean(sorted(result, key=sorter))
 
     def get_all_announce(self, limit=None):
         result = []

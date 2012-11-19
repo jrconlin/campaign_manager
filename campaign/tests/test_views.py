@@ -1,6 +1,7 @@
 from campaign import views
 from campaign.storage.sql import Storage
 from campaign.tests import TConfig
+from campaign.logger import Logging
 from nose.tools import eq_
 from pyramid import testing
 import json
@@ -26,14 +27,6 @@ def Request(params=None, post=None, matchdict=None, headers=None,
     if registry:
         request.registry.update(registry)
     return request
-
-
-class FakeMetlog():
-
-    def metlog(self, **kw):
-        self.lastRec = {'type': kw['type'],
-                'payload': kw['payload'],
-                'fields': kw['fields']}
 
 
 class ViewTest(unittest2.TestCase):
@@ -62,6 +55,8 @@ class ViewTest(unittest2.TestCase):
     ]
 
     def req(self, matchdict={}, user_id=None, headers=None, **kw):
+
+
         class Reg(dict):
 
             settings = {}
@@ -70,10 +65,11 @@ class ViewTest(unittest2.TestCase):
                 super(Reg, self).__init__(**kw)
                 if settings:
                     self.settings = settings
+
         request = Request(headers=headers, **kw)
         request.registry = Reg(settings=self.config.get_settings())
         request.registry['storage'] = self.storage
-        request.registry['metlog'] = FakeMetlog()
+        request.registry['logger'] = self.logger
         request.registry['auth'] = mock.Mock()
         request.registry['auth'].get_user_id.return_value = user_id
         if matchdict:
@@ -82,8 +78,11 @@ class ViewTest(unittest2.TestCase):
 
     def setUp(self):
         self.config = testing.setUp()
-        self.storage = Storage(config=TConfig({'db.type': 'sqlite',
-            'db.db': '/tmp/foo.db'}))
+        tsettings = TConfig({'db.type': 'sqlite',
+            'db.db': '/tmp/test.db',
+            'logging.use_metlog': False})
+        self.storage = Storage(config=tsettings)
+        self.logger = Logging(tsettings, None)
         for diff in self.diffs:
             record = self.base_record.copy()
             record.update(diff)

@@ -3,17 +3,12 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 """Main entry point
 """
-import logging
-
 from pyramid.config import Configurator
-from metlog.config import client_from_stream_config
 from campaign.resources import Root
 from campaign.storage.sql import Storage
 from mozsvc.config import load_into_settings
 from mozsvc.middlewares import _resolve_name
-
-
-logger = logging.getLogger('campaign')
+from campaign.logger import Logging
 
 
 def get_group(group_name, dictionary):
@@ -68,12 +63,11 @@ def main(global_config, **settings):
     config.registry['storage'] = Storage(config)
     config.registry['auth'] = configure_from_settings('auth',
                                   settings['config'].get_map('auth'))
-    metlog_client = client_from_stream_config(
-            open(global_config['__file__'], 'r'),
-            'metlog')
-    config.registry['metlog'] = metlog_client
+    config.registry['logger'] = Logging(config, global_config['__file__'])
     if settings.get('dbg.self_diag', False):
         self_diag(config)
+    config.registry['logger'].log('Starting up', fields='', 
+            severity=LOG.INFORMATIONAL)
     return config.make_wsgi_app()
 
 

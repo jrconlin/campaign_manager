@@ -104,10 +104,10 @@ class Storage(StorageBase):
             raise StorageException('Incomplete record. Skipping.')
         specificity = 0
         for col in ['lang', 'loc', 'platform',
-                    'channel', 'version' ]:
-            if len(str(data.get(col)) or ''):
+                    'channel', 'version']:
+            if len(str(data.get(col,''))):
                 specificity += 1
-        if data.get('idle_time'):
+        if data.get('idle_time') and int(data.get('idle_time')) != 0:
             specificity += 1
         data['specific'] = specificity
         snip = self.normalize_announce(data)

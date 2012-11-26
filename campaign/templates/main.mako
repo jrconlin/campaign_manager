@@ -75,9 +75,9 @@
 <div class="lang">Language</div>
 <div class="locale">Locale</div>
 <div class="product">Product</div>
-<div class="platform">Platform</div>
 <div class="channel">Channel</div>
 <div class="version">Version</div>
+<div class="platform">Platform</div>
 <div class="author">Author</div>
 <div class="note">Note</div>
 <div class="dest_url">Destination URL</div>
@@ -121,9 +121,9 @@
 <div class="lang">${dnote['lang']}</div>
 <div class="locale">${dnote['locale']}</div>
 <div class="product">${dnote['product']}</div>
-<div class="platform">${dnote['platform']}</div>
 <div class="channel">${dnote['channel']}</div>
 <div class="version">${dnote['version']}</div>
+<div class="platform">${dnote['platform']}</div>
 <div class="author">${dnote['author']}></div>
 <div class="note">${dnote['note']}</div>
 <div class="dest_url">${dnote['dest_url']}</div>

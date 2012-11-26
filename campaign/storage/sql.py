@@ -3,7 +3,7 @@ import json
 import time
 from . import StorageBase, StorageException
 from sqlalchemy import (Column, Integer, String, Text,
-        create_engine, MetaData, text)
+                        create_engine, MetaData, text)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import scoped_session, sessionmaker
 
@@ -53,13 +53,12 @@ class Storage(StorageBase):
             host = ''
             if (settings.get('db.user')):
                 userpass = '%s:%s@' % (settings.get('db.user'),
-                        settings.get('db.password'))
+                                       settings.get('db.password'))
             if (settings.get('db.host')):
                 host = '%s' % settings.get('db.host')
-            dsn = '%s://%s%s/%s' % (
-                    settings.get('db.type', 'mysql'),
-                    userpass, host,
-                    settings.get('db.db', self.__database__))
+            dsn = '%s://%s%s/%s' % (settings.get('db.type', 'mysql'),
+                                    userpass, host,
+                                    settings.get('db.db', self.__database__))
             self.engine = create_engine(dsn, pool_recycle=3600)
             Base.metadata.create_all(self.engine)
             self.session = scoped_session(sessionmaker(bind=self.engine))()
@@ -78,11 +77,11 @@ class Storage(StorageBase):
                     "values ('test', 'test', 'test', 'test', 0, 0, 'test', " +
                     "'test', 'test', 0)")
                 resp = conn.execute(("select id, note from %s where " %
-                    self.__tablename__) + "id='test';")
+                                    self.__tablename__) + "id='test';")
                 if resp.rowcount == 0:
                     healthy = False
                 conn.execute("delete from %s where id='test';" %
-                        self.__tablename__)
+                             self.__tablename__)
         except Exception, e:
             import warnings
             warnings.warn(str(e))
@@ -105,9 +104,11 @@ class Storage(StorageBase):
             raise StorageException('Incomplete record. Skipping.')
         specificity = 0
         for col in ['lang', 'loc', 'platform',
-                'channel', 'version', 'idle_time']:
-            if len(data.get(col, '')):
+                    'channel', 'version' ]:
+            if len(str(data.get(col)) or ''):
                 specificity += 1
+        if data.get('idle_time'):
+            specificity += 1
         data['specific'] = specificity
         snip = self.normalize_announce(data)
         campaign = Campaign(**snip)
@@ -129,15 +130,15 @@ class Storage(StorageBase):
             window = 1
         now = int(time.time() / window)
         sql = ("select id, note, priority, `specific`, "
-                "created from %s where " % self.__tablename__ +
-            " coalesce(round(start_time / %s), %s) < %s " % (window,
-                now - 1, now) +
-            "and coalesce(round(end_time / %s), %s) > %s " % (window,
-                now + 1, now))
+               "created from %s where " % self.__tablename__ +
+               " coalesce(round(start_time / %s), %s) < %s " % (window,
+               now - 1, now) +
+               "and coalesce(round(end_time / %s), %s) > %s " % (window,
+               now + 1, now))
         if data.get('last_accessed'):
             sql += "and created > :last_accessed "
             params['last_accessed'] = int(data.get('last_accessed'))
-        for field in ['product', 'platform', 'channel', 'version', 'lang', 
+        for field in ['product', 'platform', 'channel', 'version', 'lang',
                       'locale']:
             if data.get(field):
                 sql += "and coalesce(%s, :%s) = :%s " % (field, field, field)
@@ -146,45 +147,26 @@ class Storage(StorageBase):
             data['idle_time'] = 0
         sql += "and coalesce(idle_time, 0) <= :idle_time "
         params['idle_time'] = data.get('idle_time')
-        # RDS doesn't like multiple order bys, sqllite doesn't like concat. 
-        sql += " order by priority desc"
+        # RDS doesn't like multiple order bys, sqllite doesn't like concat.
+        sql += " order by priority desc, `specific` desc, created desc"
         if (settings.get('dbg.show_query', False)):
             print sql
             print params
         if (settings.get('db.limit')):
-            sql += " limit :limit";
+            sql += " limit :limit"
             params['limit'] = settings.get('db.limit')
         items = self.engine.execute(text(sql), **dict(params))
         result = []
         for item in items:
             note = json.loads(item.note)
             note.update({
-                'created': item.created,
-                'specific': item.specific,
-                'priority': item.priority or 0,
                 'id': item.id,
-                'url':
-                    settings.get('redir.url', 'http://%s/%s%s') % (
+                'url': settings.get('redir.url', 'http://%s/%s%s') % (
                         settings.get('redir.host', 'localhost'),
                         settings.get('redir.path', 'redirect/'),
                         item.id)})
             result.append(note)
-        def sorter(item):
-            "sort items by priority, specific, created"
-            key = "%04d-%s-%015s" % (item['priority'] or 0, 
-                                      (10 - item['specific']), 
-                                      item['created'])
-            return key
-
-        def clean(items):
-            " strip out sorting fields"
-            for item in items:
-                del item['specific']
-                del item['priority']
-                del item['created']
-            return items
-
-        return clean(sorted(result, key=sorter))
+        return result
 
     def get_all_announce(self, limit=None):
         result = []

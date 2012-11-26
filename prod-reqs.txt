@@ -43,8 +43,4 @@ zope.deprecation==4.0.0
 zope.interface==4.0.1
 
 # useful for metlog
-<<<<<<< HEAD
 #pyzmq
-=======
-#pyzmq 
->>>>>>> 28e498d293f4ecd1cb5efae337427c76c2eca7ff

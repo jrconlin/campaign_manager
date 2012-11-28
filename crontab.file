@@ -1,0 +1,6 @@
+PATH=.:/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:
+# Many modern crontab installations allow you to specify system events as
+# well as times. See man 5 crontab
+#
+# Please modify the path to fit reality.
+@reboot (cd ~/campaign_manager/;./run;)

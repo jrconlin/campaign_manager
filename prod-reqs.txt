@@ -15,6 +15,7 @@ WebOb==1.2.2
 WebTest==1.4.0
 argparse==1.2.1
 cef==0.3
+circus==0.5.2
 cornice==0.10
 coverage==3.5.2
 distribute==0.6.28

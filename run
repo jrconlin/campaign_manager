@@ -1,0 +1,4 @@
+#! /bin/sh
+# This file starts a circusd deamon to control a pylons server
+#
+bin/circusd circus.ini

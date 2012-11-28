@@ -11,22 +11,21 @@ System Requirements:
 Please make sure the following packages are installed on the system:
 
 gcc
+gcc-c++
 virtualenv
 sqlite
 libmysqlclient-dev
-mysql                #required for
-zmq                  #
 python-dev
 
 Once those packages are successfully installed:
 
-$ make build
+    $ make build
 
 This will run the build steps required to get things started.
 Please make sure that the build is successful and that all packages are installed.
 
-$ cp campaign.ini campaign-local.ini
-$ $EDITOR campaign-local.ini
+    $ cp campaign.ini campaign-local.ini
+    $ $EDITOR campaign-local.ini
 
 (It is recommended that you copy campaign.ini to campaign-local.ini and
 edit that file. This will prevent accidental updates of the configuration.)
@@ -45,10 +44,19 @@ Running
 
 To run:
 
-$ bin/pserve campaign-local.ini
+    $ bin/pserve campaign-local.ini
 
 This will start a server listening on the current host at port 8080. You
 may change the port in use via the campaign-local.ini configuration file.
+
+For installation on a stand alone system (e.g. an AWS instance) where you
+may wish the system to restart on reboot, you can easily get started by
+doing the following.
+
+If necessary, modify crontab.file to reflect correct path. If you already
+have a crontab file, append the contents, else:
+
+    $ crontab crontab.file
 
 Authoring
 ----
@@ -65,7 +73,7 @@ Once connected, you will be presented with a form. Empty values are considered
 Requesting Announcements
 ----
 
-https://$HOST:8080/announcements/1/$PRODUCT/$CHANNEL/$PLATFORM/$VERSION
+https://$HOST:8080/announce/1/$PRODUCT/$CHANNEL/$VERSION/$PLATFORM?idle=$IDLE
 
 An optional GET parameter of "idle" may be passed to indicate the number of
 days the platform has been idle.
@@ -77,11 +85,14 @@ where:
 *CHANNEL*
     Channel for the messages (e.g. 'firefox', 'aurora', 'nightly')
 
+*VERSION*
+    Channel version to target
+
 *PLATFORM*
     Specific device platform (e.g. 'b2g-utx')
 
-*VERSION*
-    Channel version to target
+*IDLE*
+    Optional days that the user agent has been idle.
 
 Returns a JSON object containing
 

@@ -8,7 +8,7 @@ from decorators import checkService, authorizedOnly
 from mozsvc.metrics import Service
 from mako.template import Template
 import pyramid.httpexceptions as http
-from time import strptime
+from time import strptime, mktime
 from webob import Response
 import json
 import os
@@ -72,7 +72,7 @@ def get_last_accessed(request):
     try:
         if 'If-Modified-Since' in request.headers:
             last_accessed_str = request.headers.get('If-Modified-Since')
-            last_accessed = strptime(last_accessed_str)
+            last_accessed = str(int(mktime(strptime(last_accessed_str))))
     except Exception, e:
         settings = request.registry.settings
         if settings.get('dbg.traceback', False):
@@ -110,7 +110,7 @@ def get_announcements(request):
     logger.log(type='campaign', severity=LOG.NOTICE,
                msg='fetch_query', fields=args)
     if not len(reply['announcements']):
-        if last_accessed:
+        if last_accessed.get('last_accessed'):
             raise http.HTTPNotModified
         else:
             raise http.HTTPNoContent

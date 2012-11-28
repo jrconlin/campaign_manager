@@ -4,6 +4,7 @@ from campaign.tests import TConfig
 from campaign.logger import Logging
 from nose.tools import eq_
 from pyramid import testing
+import datetime
 import json
 import mock
 import pyramid.httpexceptions as http
@@ -100,6 +101,20 @@ class ViewTest(unittest2.TestCase):
         response = views.get_announcements(self.req(matchdict={'channel': 'a',
                 'platform': 'a', 'version': 0, 'idle_time': 6}))
         eq_(len(response['announcements']), 4)
+        self.assertRaises(http.HTTPNotModified,
+                views.get_announcements,
+                self.req(matchdict={'channel': 'a',
+                                    'platform': 'a', 'version': 0},
+                        headers={'If-Modified-Since':
+                                 time.strftime('%a %b %d %H:%M:%S %Y',
+                                    datetime.datetime.fromtimestamp(
+                                        time.time()+60).timetuple())}))
+        self.storage.purge()
+        self.assertRaises(http.HTTPNoContent,
+                views.get_announcements,
+                self.req(matchdict={'channel': 'z', 'platform':'z',
+                                    'version': 'z'}))
+
 
     def test_get_all(self):
         self.assertRaises(http.HTTPUnauthorized,

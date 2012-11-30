@@ -248,7 +248,6 @@ def logout_page(request):
             session.save()
         except AttributeError:
             pass
-    login_page(request)
 
 
 def login_page(request, error=None):
@@ -263,7 +262,9 @@ def login_page(request, error=None):
         pass
     try:
         template = get_template('login')
+        # use 'invalid@nowhere' to break persona looping on logout.
         response = Response(str(template.render(
+            user=session.get('uid','invalid@nowhere'),
             audience=request.get('HTTP_HOST'))),
             status=403)
         if (session.get('uid')):

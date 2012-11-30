@@ -137,6 +137,7 @@
 <script id='bidjs' src="https://browserid.org/include.js" type="text/javascript"></script>
 <script type="text/javascript">
     $(".logout").bind("click", function(e) {
+            navigator.id.logout();
             $.ajax({url: "/logout/",
                 type: "DELETE",
                 contentType: "application/javascript",
@@ -150,11 +151,15 @@
                     }
             });
     });
-    $("#bidjs").ready(function() {
+$("#bidjs").ready(function() {
+        navigator.id.watch({loggedInUser: '${author}',
+            onlogin: function() {console.debug('main-login')},
+            onlogout: function() {
+            // Persona loops on calling onlogout. < Neato.
+            //document.location="${land}";
+                }});
         $(".logout").click(function(){
             navigator.id.logout();
-            $.cookie("campaign", null, {path: "/"});
-            document.location="${land}";
         });
     });
     $("#delete").click(function() {

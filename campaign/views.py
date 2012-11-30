@@ -61,7 +61,9 @@ def get_lang_loc(request):
         (lang, loc) = langloc.split('-')
     else:
         (lang, loc) = (langloc, None)
-    return {'lang': lang.lower(), 'locale': loc.upper()}
+    if loc:
+        loc = loc.upper()
+    return {'lang': lang.lower(), 'locale': loc}
 
 
 def get_last_accessed(request):

@@ -57,7 +57,6 @@ class ViewTest(unittest2.TestCase):
 
     def req(self, matchdict={}, user_id=None, headers=None, **kw):
 
-
         class Reg(dict):
 
             settings = {}
@@ -80,8 +79,8 @@ class ViewTest(unittest2.TestCase):
     def setUp(self):
         self.config = testing.setUp()
         tsettings = TConfig({'db.type': 'sqlite',
-            'db.db': '/tmp/test.db',
-            'logging.use_metlog': False})
+                             'db.db': '/tmp/test.db',
+                             'logging.use_metlog': False})
         self.storage = Storage(config=tsettings)
         self.logger = Logging(tsettings, None)
         for diff in self.diffs:
@@ -95,36 +94,40 @@ class ViewTest(unittest2.TestCase):
     def test_get_announcements(self):
         # normal number
         response = views.get_announcements(self.req(matchdict={'channel': 'a',
-                'platform': 'a', 'version': 0}))
+                                           'platform': 'a', 'version': 0}))
+        eq_(len(response['announcements']), 3)
+        response = views.get_announcements(self.req(matchdict={'channel': 'a',
+                                           'platform': 'a', 'version': 0},
+                                           headers={'Accept-Language': 'en'}))
         eq_(len(response['announcements']), 3)
         # idle number
         response = views.get_announcements(self.req(matchdict={'channel': 'a',
                 'platform': 'a', 'version': 0, 'idle_time': 6}))
         eq_(len(response['announcements']), 4)
         self.assertRaises(http.HTTPNotModified,
-                views.get_announcements,
-                self.req(matchdict={'channel': 'a',
-                                    'platform': 'a', 'version': 0},
-                        headers={'If-Modified-Since':
-                                 time.strftime('%a %b %d %H:%M:%S %Y',
-                                    datetime.datetime.fromtimestamp(
-                                        time.time()+60).timetuple())}))
+                          views.get_announcements,
+                          self.req(matchdict={'channel': 'a',
+                                              'platform': 'a', 'version': 0},
+                          headers={'If-Modified-Since':
+                                   time.strftime('%a %b %d %H:%M:%S %Y',
+                                       datetime.datetime.fromtimestamp(
+                                           time.time() + 60).timetuple())}))
         self.storage.purge()
         self.assertRaises(http.HTTPNoContent,
-                views.get_announcements,
-                self.req(matchdict={'channel': 'z', 'platform':'z',
-                                    'version': 'z'}))
-
+                          views.get_announcements,
+                          self.req(matchdict={'channel': 'z', 'platform': 'z',
+                                              'version': 'z'}))
 
     def test_get_all(self):
         self.assertRaises(http.HTTPUnauthorized,
-                views.get_all_announcements,
-                self.req())
+                          views.get_all_announcements,
+                          self.req())
         # scan for include.js or 'test="login"' id?
         # try with a 'valid' user id
         self.assertRaises(http.HTTPUnauthorized,
-                views.get_all_announcements,
-                self.req(matchdict={}, user_id='invalid@example.com'))
+                          views.get_all_announcements,
+                          self.req(matchdict={},
+                                   user_id='invalid@example.com'))
         # try successful json
         req = self.req(matchdict={}, user_id='foo@mozilla.com')
         req.accept_encoding = 'application/javascript'
@@ -137,9 +140,9 @@ class ViewTest(unittest2.TestCase):
         record = response[0]
         req = self.req(matchdict={'token': record['id']})
         self.assertRaises(http.HTTPTemporaryRedirect,
-                views.handle_redir, req)
+                          views.handle_redir, req)
         self.assertRaises(http.HTTPNotFound, views.handle_redir,
-                self.req(matchdict={'token': 'Invalid Token'}))
+                          self.req(matchdict={'token': 'Invalid Token'}))
 
     def test_admin_page(self):
         req = self.req()
@@ -154,7 +157,8 @@ class ViewTest(unittest2.TestCase):
     def test_manage_announce(self):
         # test assertion post
         req = self.req(matchdict={'channel': 'c', 'title': 'Goat',
-            'note': 'Ready for sacrifice'}, user_id='foo@mozilla.com')
+                                  'note': 'Ready for sacrifice'},
+                       user_id='foo@mozilla.com')
         response = views.manage_announce(req)
         # test create
         time.sleep(2)  # Give the db a second to write the record.
@@ -167,7 +171,7 @@ class ViewTest(unittest2.TestCase):
                 break
         self.assertIsNotNone(goat)
         req = self.req(params={'delete': goat['id']},
-            user_id='foo@mozilla.com')
+                       user_id='foo@mozilla.com')
         self.assertRaises(http.HTTPOk, views.del_announce, req)
         time.sleep(2)  # Give the db a second to write the record.
         req = self.req(matchdict={'token': goat['id']})

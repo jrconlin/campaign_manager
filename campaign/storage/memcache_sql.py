@@ -38,7 +38,8 @@ class Storage(SqlStorage):
         # significant set of characters.
         maxLen = int(245 / len(fields)) - 1
         for field in fields:
-            key.append(data.get(field, 'NONE')[:maxLen])
+            val = data.get(field) or 'NONE'
+            key.append(val[:maxLen])
         return 'ca_' + '-'.join(key)
 
     def get_announce(self, data):

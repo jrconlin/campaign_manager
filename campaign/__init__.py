@@ -5,7 +5,6 @@
 """
 from pyramid.config import Configurator
 from campaign.resources import Root
-from campaign.storage.sql import Storage
 from mozsvc.config import load_into_settings
 from mozsvc.middlewares import _resolve_name
 from campaign.logger import Logging
@@ -60,14 +59,16 @@ def main(global_config, **settings):
     config.include("pyramid_beaker")
     config.include("mozsvc")
     config.scan("campaign.views")
-    config.registry['storage'] = Storage(config)
+    config.registry['storage'] = _resolve_name(
+                                    settings.get('db.backend',
+                                    'campaign.storage.sql.Storage'))(config)
     config.registry['auth'] = configure_from_settings('auth',
-                                  settings['config'].get_map('auth'))
+                                    settings['config'].get_map('auth'))
     config.registry['logger'] = Logging(config, global_config['__file__'])
     if settings.get('dbg.self_diag', False):
         self_diag(config)
-    config.registry['logger'].log('Starting up', fields='', 
-            severity=LOG.INFORMATIONAL)
+    config.registry['logger'].log('Starting up', fields='',
+                                  severity=LOG.INFORMATIONAL)
     return config.make_wsgi_app()
 
 

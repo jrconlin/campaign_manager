@@ -36,6 +36,7 @@ requests==0.14.1
 simplejson==2.6.2
 six==1.2.0
 translationstring==1.1
+umemcache=1.6
 unittest2==0.5.1
 venusian==1.0a7
 waitress==0.8.1

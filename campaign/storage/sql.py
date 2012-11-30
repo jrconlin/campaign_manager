@@ -48,17 +48,17 @@ class Storage(StorageBase):
 
     def _connect(self):
         try:
-            settings = self.config.get_settings()
             userpass = ''
             host = ''
-            if (settings.get('db.user')):
-                userpass = '%s:%s@' % (settings.get('db.user'),
-                                       settings.get('db.password'))
-            if (settings.get('db.host')):
-                host = '%s' % settings.get('db.host')
-            dsn = '%s://%s%s/%s' % (settings.get('db.type', 'mysql'),
+            if (self.settings.get('db.user')):
+                userpass = '%s:%s@' % (self.settings.get('db.user'),
+                                       self.settings.get('db.password'))
+            if (self.settings.get('db.host')):
+                host = '%s' % self.settings.get('db.host')
+            dsn = '%s://%s%s/%s' % (self.settings.get('db.type', 'mysql'),
                                     userpass, host,
-                                    settings.get('db.db', self.__database__))
+                                    self.settings.get('db.db',
+                                        self.__database__))
             self.engine = create_engine(dsn, pool_recycle=3600)
             Base.metadata.create_all(self.engine)
             self.session = scoped_session(sessionmaker(bind=self.engine))()
@@ -120,12 +120,11 @@ class Storage(StorageBase):
         # Really shouldn't allow "global" variables, but I know full well
         # that they're going to want them.
         params = {}
-        settings = self.config.get_settings()
         # The window allows the db to cache the query for the length of the
         # window. This is because the database won't cache a query if it
         # differs from a previous one. The timestamp will cause the query to
         # not be cached.
-        window = int(settings.get('db.query_window', 1))
+        window = int(self.settings.get('db.query_window', 1))
         if window == 0:
             window = 1
         now = int(time.time() / window)
@@ -149,21 +148,21 @@ class Storage(StorageBase):
         params['idle_time'] = data.get('idle_time')
         # RDS doesn't like multiple order bys, sqllite doesn't like concat.
         sql += " order by priority desc, `specific` desc, created desc"
-        if (settings.get('dbg.show_query', False)):
+        if (self.settings.get('dbg.show_query', False)):
             print sql
             print params
-        if (settings.get('db.limit')):
+        if (self.settings.get('db.limit')):
             sql += " limit :limit"
-            params['limit'] = settings.get('db.limit')
+            params['limit'] = self.settings.get('db.limit')
         items = self.engine.execute(text(sql), **dict(params))
         result = []
         for item in items:
             note = json.loads(item.note)
             note.update({
                 'id': item.id,
-                'url': settings.get('redir.url', 'http://%s/%s%s') % (
-                        settings.get('redir.host', 'localhost'),
-                        settings.get('redir.path', 'redirect/'),
+                'url': self.settings.get('redir.url', 'http://%s/%s%s') % (
+                        self.settings.get('redir.host', 'localhost'),
+                        self.settings.get('redir.path', 'redirect/'),
                         item.id)})
             result.append(note)
         return result

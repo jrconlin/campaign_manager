@@ -17,40 +17,37 @@ import logging
 api_version = 1
 
 fetch = Service(name='fetch',
-        path='/announce/%s/{product}/{channel}/{version}/{platform}' %
-            api_version,
-        description='Fetcher')
-        #TODO:
-        #path  /announce/{api_version}/{product}/{channel}/ \
-        #        {channel_version}/{platform}
+                path='/announce/%s/{product}/{channel}/{version}/{platform}' %
+                api_version,
+                description='Fetcher')
 get_all = Service(name="get_all",
-        path='/announce/',
-        description='Fetch Everything')
+                  path='/announce/',
+                  description='Fetch Everything')
 author2 = Service(name='author2',
-        path='/author/%s/{id}' % api_version,
-        description='Authoring Interface with record')
+                  path='/author/%s/{id}' % api_version,
+                  description='Authoring Interface with record')
 author = Service(name='author',
-        path='/author/%s/' % api_version,
-        description='Authoring Interface')
+                 path='/author/%s/' % api_version,
+                 description='Authoring Interface')
 logout = Service(name='logout',
-        path='/logout/',
-        description='logout')
+                 path='/logout/',
+                 description='logout')
 redirl = Service(name='redir2',
-        path='/redirect/%s/{locale}/{token}' % api_version,
-        description='redir with locale')
+                 path='/redirect/%s/{locale}/{token}' % api_version,
+                 description='redir with locale')
 redir = Service(name='redir',
-        path='/redirect/%s/{token}' % api_version,
-        description='redir')
+                path='/redirect/%s/{token}' % api_version,
+                description='redir')
 health = Service(name='health',
-        path='/status/',
-        description='Health Check')
+                 path='/status/',
+                 description='Health Check')
 
 fstatic = Service(name='fstatic',
-        path='/{file}',
-        description='hack')
+                  path='/{file}',
+                  description='hack')
 root = Service(name='root',
-        path='/',
-        description='Default path')
+               path='/',
+               description='Default path')
 
 logger = logging.getLogger('root')
 

@@ -1,8 +1,5 @@
 import logging
-import json
-import time
-from . import StorageException
-from .sql import Storage as SqlStorage
+from campaign.storage.sql import Storage as SqlStorage
 # Requires umemcache installed
 from mozsvc.storage.mcclient import MemcachedClient
 
@@ -11,20 +8,18 @@ class Storage(SqlStorage):
 
     def __init__(self, config, **kw):
         try:
-            super(SqlStorage, self).__init__(config, kw)
+            super(Storage, self).__init__(config, **kw)
             self.memcache = MemcachedClient(
-                servers=config.get('storage.memcache_servers'),
+                servers=self.settings.get('db.memcache_servers'),
                 key_prefix='cm_')
-
+            self.expry = int(self.settings.get('db.query_window'))
         except Exception, e:
-            import pdb; pdb.set_trace();
             logging.error('Could not initialize Storage "%s"', str(e))
             raise e
 
     def health_check(self):
-        healthy = super(SqlStorage, self).health_check()
-        #TODO: check memcache health
-
+        healthy = super(Storage, self).health_check()
+        # TODO: MemCache health check
         return healthy
 
     def resolve(self, token):
@@ -32,10 +27,31 @@ class Storage(SqlStorage):
             return None
         record = self.memcache.get(token)
         if record is None:
-            record = super(SqlStorage, self).resolve(token)
+            record = super(Storage, self).resolve(token)
         return record
 
     def _memcache_key(self, data):
+        key = []
+        fields = ['product', 'platform', 'channel', 'version', 'lang',
+                  'locale', 'idle_time']
+        # memcache keys are max 250 characters. max the string to the first
+        # significant set of characters.
+        maxLen = int(245 / len(fields)) - 1
+        for field in fields:
+            key.append(data.get(field, 'NONE')[:maxLen])
+        return 'ca_' + '-'.join(key)
 
     def get_announce(self, data):
-        
+        mkey = self._memcache_key(data)
+        record = self.memcache.get(mkey)
+        if record is not None:
+            return record
+        else:
+            record = super(Storage, self).get_announce(data)
+            self.memcache.set(mkey, record, self.expry)
+            return record
+
+    def del_announce(self, keys):
+        for key in keys:
+            self.memcache.delete(key)
+        return super(Storage, self).del_announce(keys)

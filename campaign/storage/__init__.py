@@ -20,6 +20,7 @@ class StorageBase(object):
 
     def __init__(self, config, **kw):
         self.config = config
+        self.settings = config.get_settings()
         self.alphabet = string.digits + string.letters
         self.memory = {}
         # self._mcache = memcache.Client(kw.get(servers,['localhost']))
@@ -86,24 +87,24 @@ class StorageBase(object):
     def del_announce(self, keys):
         """ Delete the set of announcements. Called from UI. """
         raise StorageException('Undefined required method: ' %
-                stack()[0][3])
+                               stack()[0][3])
 
     def put_announce(self, data):
         """ Store the announcement (normalizing if necessary) """
         raise StorageException('Undefined required method: ' %
-                stack()[0][3])
+                               stack()[0][3])
 
     def get_announce(self, data):
         """ Retrieve matching announcements based on data """
         raise StorageException('Undefined required method: ' %
-                stack()[0][3])
+                               stack()[0][3])
 
     def get_all_announce(self, limit=None):
         """ Fetch all announcements (used by the UI) """
         raise StorageException('Undefined required method: ' %
-                stack()[0][3])
+                               stack()[0][3])
 
     def purge(self):
         """ Purge all listings (ONLY FOR TESTING) """
         raise StorageException('Undefined required method: ' %
-                stack()[0][3])
+                               stack()[0][3])

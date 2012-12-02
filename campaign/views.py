@@ -5,14 +5,15 @@
 """
 from campaign import LOG
 from decorators import checkService, authorizedOnly
-from mozsvc.metrics import Service
+from email import utils as eut
 from mako.template import Template
-import pyramid.httpexceptions as http
-from time import strptime, mktime
+from mozsvc.metrics import Service
+from time import mktime
 from webob import Response
 import json
-import os
 import logging
+import os
+import pyramid.httpexceptions as http
 
 api_version = 1
 
@@ -71,7 +72,7 @@ def get_last_accessed(request):
     try:
         if 'If-Modified-Since' in request.headers:
             last_accessed_str = request.headers.get('If-Modified-Since')
-            last_accessed = str(int(mktime(strptime(last_accessed_str))))
+            last_accessed = str(int(mktime(eut.parsedate(last_accessed_str))))
     except Exception, e:
         settings = request.registry.settings
         if settings.get('dbg.traceback', False):

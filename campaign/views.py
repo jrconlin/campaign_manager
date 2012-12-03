@@ -8,12 +8,12 @@ from decorators import checkService, authorizedOnly
 from email import utils as eut
 from mako.template import Template
 from mozsvc.metrics import Service
-from time import mktime
 from webob import Response
 import json
 import logging
 import os
 import pyramid.httpexceptions as http
+import time
 
 api_version = 1
 
@@ -74,7 +74,10 @@ def get_last_accessed(request):
     try:
         if 'If-Modified-Since' in request.headers:
             last_accessed_str = request.headers.get('If-Modified-Since')
-            last_accessed = str(int(mktime(eut.parsedate(last_accessed_str))))
+            last_accessed = str(int(time.mktime(
+                eut.parsedate(last_accessed_str))))
+            logger.log(type='campaign', severity=LOG.DEBUG,
+                       msg='I-M-S: ' + last_accessed_str, fields={})
     except Exception, e:
         settings = request.registry.settings
         if settings.get('dbg.traceback', False):
@@ -117,7 +120,15 @@ def get_announcements(request):
         else:
             raise http.HTTPNoContent
     log_fetched(request, reply)
-    return reply
+    response = Response(json.dumps(reply))
+    timestamp = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
+                              time.gmtime())
+    # The client will echo back in If-Modified-Since whatever we provide
+    # in the Date header
+    response.headerlist = [
+        ('Content-Type', 'application/json; charset=UTF-8'),
+        ('Date', timestamp)]
+    return response
 
 
 def get_template(name):

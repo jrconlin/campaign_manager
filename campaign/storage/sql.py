@@ -58,7 +58,7 @@ class Storage(StorageBase):
             dsn = '%s://%s%s/%s' % (self.settings.get('db.type', 'mysql'),
                                     userpass, host,
                                     self.settings.get('db.db',
-                                        self.__database__))
+                                                      self.__database__))
             self.engine = create_engine(dsn, pool_recycle=3600)
             Base.metadata.create_all(self.engine)
             self.session = scoped_session(sessionmaker(bind=self.engine))()
@@ -165,7 +165,7 @@ class Storage(StorageBase):
                 # This uses the server string ID for redirect/tracking
                 'url': self.settings.get('redir.url', 'http://%s/%s%s') % (
                         self.settings.get('redir.host', 'localhost'),
-                        self.settings.get('redir.path', 'redirect/'),
+                        self.settings.get('redir.path', 'redirect/1/'),
                         item.id)})
             result.append(note)
         return result

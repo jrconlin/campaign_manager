@@ -1,6 +1,6 @@
 <!doctype html>
 <%
-    from time import (strftime, localtime)
+    from time import (strftime, gmtime)
     import json
 
     vers = pageargs.get('version', 1)
@@ -90,11 +90,11 @@
 <%
     dnote = dict(note);
     if dnote.get('start_time'):
-        dnote['start_time'] = strftime(time_format, localtime(note.start_time))
+        dnote['start_time'] = strftime(time_format, gmtime(note.start_time))
     else:
         dnote['start_time'] = '<i>Now</i>'
     if dnote.get('end_time'):
-        dnote['end_time'] = strftime(time_format, localtime(note.end_time))
+        dnote['end_time'] = strftime(time_format, gmtime(note.end_time))
     else:
         dnote['end_time'] = '<i>Forever</i>'
     if not dnote.get('idle_time'):
@@ -114,7 +114,7 @@
 <div class="delete"><input type="checkbox" value="${note.id}"></div>
 <div class="id"><a href="/redirect/${vers}/${dnote['id']}">${dnote['id']}</a></div>
 <div class="priority">${dnote['priority']}</div>
-<div class="created">${strftime(time_format, localtime(dnote['created']))}</div>
+<div class="created">${strftime(time_format, gmtime(dnote['created']))}</div>
 <div class="start_time">${dnote['start_time']}</div>
 <div class="end_time">${dnote['end_time']}</div>
 <div class="idle_time">${dnote['idle_time']} days</div>

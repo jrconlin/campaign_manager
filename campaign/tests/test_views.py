@@ -94,18 +94,19 @@ class ViewTest(unittest2.TestCase):
         # normal number
         response = views.get_announcements(self.req(matchdict={'channel': 'a',
                                            'platform': 'a', 'version': 0}))
-        eq_(len(response['announcements']), 3)
+        eq_(len(json.loads(response.body)['announcements']), 3)
+        assert('Date' in response.headers)
         response = views.get_announcements(self.req(matchdict={'channel': 'a',
                                            'platform': 'a', 'version': 0},
                                            headers={'Accept-Language': 'en'}))
-        eq_(len(response['announcements']), 3)
+        eq_(len(json.loads(response.body)['announcements']), 3)
         # idle number
         response = views.get_announcements(self.req(matchdict={'channel': 'a',
                               'platform': 'a',
                               'version': 0,
                               'idle_time': 6}))
-        eq_(len(response['announcements']), 4)
-        timestamp = time.strftime("%a, %d %b %Y %H:%M:%S",
+        eq_(len(json.loads(response.body)['announcements']), 4)
+        timestamp = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
                                   time.gmtime(time.time() + 60))
         self.assertRaises(http.HTTPNotModified,
                           views.get_announcements,
@@ -174,8 +175,8 @@ class ViewTest(unittest2.TestCase):
         response = views.manage_announce(req)
         # test create
         time.sleep(2)  # Give the db a second to write the record.
-        response = views.get_announcements(self.req(
-            matchdict={'channel': 'c'}))
+        response = json.loads(views.get_announcements(self.req(
+            matchdict={'channel': 'c'})).body)
         goat = None
         for record in response['announcements']:
             if record['title'] == 'Goat':

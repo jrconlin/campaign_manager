@@ -159,7 +159,10 @@ class Storage(StorageBase):
         for item in items:
             note = json.loads(item.note)
             note.update({
-                'id': item.id,
+                # ID in this case is a unique integer per CM record
+                # it is used by the client to replace records.
+                'id': int(item.created * 100),
+                # This uses the server string ID for redirect/tracking
                 'url': self.settings.get('redir.url', 'http://%s/%s%s') % (
                         self.settings.get('redir.host', 'localhost'),
                         self.settings.get('redir.path', 'redirect/'),

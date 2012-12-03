@@ -134,11 +134,23 @@ class ViewTest(unittest2.TestCase):
         response = views.get_all_announcements(req)
         eq_(len(response['announcements']), 6)
 
+    def test_get_lang_loc(self):
+        response = views.get_lang_loc(self.req(
+                                      headers={'Accept-Language': 'en_US'}))
+        eq_(response, {'lang': 'en', 'locale': 'US'})
+        response = views.get_lang_loc(self.req(
+                                      headers={'Accept-Language': 'en-US'}))
+        eq_(response, {'lang': 'en', 'locale': 'US'})
+        response = views.get_lang_loc(self.req(
+                                      headers={'Accept-Language': 'en'}))
+        eq_(response, {'lang': 'en', 'locale': None})
+
     def test_handle_redir(self):
         # get a record
         response = self.storage.get_announce({'channel': 'b'})
         record = response[0]
-        req = self.req(matchdict={'token': record['id']})
+        rec_id = record['url'].split('/').pop()
+        req = self.req(matchdict={'token': rec_id})
         self.assertRaises(http.HTTPTemporaryRedirect,
                           views.handle_redir, req)
         self.assertRaises(http.HTTPNotFound, views.handle_redir,
@@ -169,10 +181,11 @@ class ViewTest(unittest2.TestCase):
             if record['title'] == 'Goat':
                 goat = record
                 break
+        goat_id = goat['url'].split('/').pop()
         self.assertIsNotNone(goat)
-        req = self.req(params={'delete': goat['id']},
+        req = self.req(params={'delete': goat_id},
                        user_id='foo@mozilla.com')
         self.assertRaises(http.HTTPOk, views.del_announce, req)
         time.sleep(2)  # Give the db a second to write the record.
-        req = self.req(matchdict={'token': goat['id']})
+        req = self.req(matchdict={'token': goat_id})
         self.assertRaises(http.HTTPNotFound, views.handle_redir, req)

@@ -83,6 +83,7 @@ class TestStorage(unittest2.TestCase):
         self.assertEqual(len(announce), 1)
         # Store the unique record data for the resolve check.
         resolve_rec = announce[0]
+        goat_id = resolve_rec['url'].split('/').pop()
 
         data = {'platform': 'a', 'channel': 'a'}
         time.sleep(self.now + 2 - int(time.time()))
@@ -98,8 +99,8 @@ class TestStorage(unittest2.TestCase):
 
         # Since we have an ID for a unique record, query it to make
         # sure records resolve.
-        print "resolve check: %s" % resolve_rec['id']
-        rec = self.storage.resolve(resolve_rec['id'])
+        print "resolve check: %s" % goat_id
+        rec = self.storage.resolve(goat_id)
         self.assertEqual('Everyone', json.loads(rec['note'])['title'])
 
 #TODO: continue tests

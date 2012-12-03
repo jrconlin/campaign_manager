@@ -59,6 +59,8 @@ def get_lang_loc(request):
     langloc = header.split(',')[0]
     if ('-' in langloc):
         (lang, loc) = langloc.split('-')
+    elif ('_' in langloc):
+        (lang, loc) = langloc.split('_')
     else:
         (lang, loc) = (langloc, None)
     if loc:

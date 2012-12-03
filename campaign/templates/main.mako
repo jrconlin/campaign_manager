@@ -83,7 +83,7 @@
 <div class="dest_url">Destination URL</div>
 </div>
 <%
-    time_format = '%Y %b %d - %H:%M:%S UTC'
+    time_format = '%a, %d %b %Y - %H:%M:%S GMT'
     %>
     <!-- Wanna guess what ougth to be done as a rest call? hint: -->
 %for note in announcements:

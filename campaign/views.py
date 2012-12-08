@@ -3,7 +3,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 """ Cornice services.
 """
-from campaign import LOG
+from campaign import logger, LOG
 from decorators import checkService, authorizedOnly
 from email import utils as eut
 from mako.template import Template
@@ -11,7 +11,6 @@ from mozsvc.metrics import Service
 from time import mktime
 from webob import Response
 import json
-import logging
 import os
 import pyramid.httpexceptions as http
 
@@ -50,8 +49,6 @@ root = Service(name='root',
                path='/',
                description='Default path')
 
-logger = logging.getLogger('root')
-
 _TMPL = os.path.join(os.path.dirname(__file__), 'templates')
 
 
@@ -83,15 +80,15 @@ def get_last_accessed(request):
         if settings.get('dbg.break_unknown_exception', False):
             import pdb
             pdb.set_trace()
-        request.registry['logger'].log(type='campaign_error',
+        request.registry['logger'].log(type='error',
                                        severity=LOG.ERROR,
                                        msg='Exception: %s' % str(e))
     return {'last_accessed': last_accessed}
 
 
 def log_fetched(request, reply):
-    logger = request.registry['logger']
-    logger.log(type='campaign_log',
+    rlogger = request.registry['logger']
+    rlogger.log(type='log',
                severity=LOG.NOTICE,
                msg='fetched',
                fields=json.dumps(reply['announcements']))
@@ -102,14 +99,14 @@ def log_fetched(request, reply):
 def get_announcements(request):
     """Returns campaigns in JSON."""
     # get the valid user information from the request.
-    logger = request.registry.get('logger')
+    rlogger = request.registry.get('logger')
     storage = request.registry.get('storage')
     args = request.matchdict
     args.update(get_lang_loc(request))
     last_accessed = get_last_accessed(request)
     args.update(last_accessed)
     reply = {'announcements': storage.get_announce(args)}
-    logger.log(type='campaign', severity=LOG.NOTICE,
+    rlogger.log(type='log', severity=LOG.NOTICE,
                msg='fetch_query', fields=args)
     if not len(reply['announcements']):
         if last_accessed.get('last_accessed'):
@@ -267,7 +264,7 @@ def login_page(request, error=None):
         template = get_template('login')
         # use 'invalid@nowhere' to break persona looping on logout.
         response = Response(str(template.render(
-            user=session.get('uid','invalid@nowhere'),
+            user=session.get('uid', 'invalid@nowhere'),
             audience=request.get('HTTP_HOST'))),
             status=403)
         if (session.get('uid')):
@@ -286,7 +283,8 @@ def login_page(request, error=None):
         if settings.get('dbg.break_unknown_exception', False):
             import pdb
             pdb.set_trace()
-        request.registry['logger'].log(str(e), severity=LOG.ERROR)
+        request.registry['logger'].log(str(e), type='error',
+                                       severity=LOG.ERROR)
         raise http.HTTPServerError
 
 
@@ -294,13 +292,13 @@ def login_page(request, error=None):
 @redirl.get()
 @checkService
 def handle_redir(request):
-    logger = request.registry.get('logger')
+    rlogger = request.registry.get('logger')
     storage = request.registry.get('storage')
     data = storage.resolve(request.matchdict.get('token'))
     if data is None:
         raise http.HTTPNotFound
-    logger.log(type='campaign', severity=LOG.INFORMATIONAL,
-               msg='redirect', fields=data)
+    rlogger.log(type='redirect', severity=LOG.INFORMATIONAL,
+                msg='redirect', fields=data)
     raise http.HTTPTemporaryRedirect(location=data['dest_url'])
 
 

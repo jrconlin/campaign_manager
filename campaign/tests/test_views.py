@@ -107,15 +107,11 @@ class ViewTest(unittest2.TestCase):
         eq_(len(response['announcements']), 4)
         timestamp = time.strftime("%a, %d %b %Y %H:%M:%S",
                                   time.gmtime(time.time() + 60))
-        """
-        -- removed while addressing bug 818087
-
         self.assertRaises(http.HTTPNotModified,
                           views.get_announcements,
                           self.req(matchdict={'channel': 'a',
                                               'platform': 'a', 'version': 0},
                           headers={'If-Modified-Since': timestamp}))
-        """
         self.storage.purge()
         self.assertRaises(http.HTTPNoContent,
                           views.get_announcements,

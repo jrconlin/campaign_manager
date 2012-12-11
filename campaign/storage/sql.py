@@ -137,9 +137,11 @@ class Storage(StorageBase):
                "and coalesce(round(end_time / %s), %s) > %s " % (window,
                now + 1, now))
         if data.get('last_accessed'):
-            sql += ("and coalesce(round(start_time / %s), %s) " %
-            (window, now -1)) + " + idle_time > :last_accessed "
             params['last_accessed'] = int(data.get('last_accessed'))
+            idle_secs = 86400 * params['last_accessed']
+            sql += ("and coalesce(round(start_time / %s), %s) " %
+                    (window, now - 1)) + (" + %s > :last_accessed "
+                                          % (now - idle_secs))
         for field in ['product', 'platform', 'channel', 'version', 'lang',
                       'locale']:
             if data.get(field):

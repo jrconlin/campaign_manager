@@ -108,7 +108,11 @@ def get_announcements(request):
     args.update(get_lang_loc(request))
     last_accessed = get_last_accessed(request)
     args.update(last_accessed)
-    reply = {'announcements': storage.get_announce(args)}
+    try:
+        reply = {'announcements': storage.get_announce(args)}
+    except Exception, e:
+        rlogger.log(type='log', severity=LOG.ERROR,
+                msg='EXCEPTION: %s' % str(e))
     rlogger.log(type='log', severity=LOG.NOTICE,
                msg='fetch_query', fields=args)
     if not len(reply['announcements']):

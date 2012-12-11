@@ -136,9 +136,6 @@ class Storage(StorageBase):
                now - 1, now) +
                "and coalesce(round(end_time / %s), %s) > %s " % (window,
                now + 1, now))
-        if data.get('last_accessed'):
-            sql += "and created > :last_accessed "
-            params['last_accessed'] = int(data.get('last_accessed'))
         for field in ['product', 'platform', 'channel', 'version', 'lang',
                       'locale']:
             if data.get(field):
@@ -148,7 +145,6 @@ class Storage(StorageBase):
             data['idle_time'] = 0
         sql += "and coalesce(idle_time, 0) <= :idle_time "
         params['idle_time'] = data.get('idle_time')
-        # RDS doesn't like multiple order bys, sqllite doesn't like concat.
         sql += " order by priority desc, `specific` desc, created desc"
         if (self.settings.get('dbg.show_query', False)):
             print sql
@@ -170,7 +166,6 @@ class Storage(StorageBase):
                         self.settings.get('redir.path',
                                           'redirect/%s/' % api_version),
                         item.id)})
-            import pdb; pdb.set_trace()
             result.append(note)
         return result
 

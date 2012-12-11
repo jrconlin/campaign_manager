@@ -1,4 +1,3 @@
-import logging
 import json
 import time
 from . import StorageBase, StorageException
@@ -6,7 +5,8 @@ from sqlalchemy import (Column, Integer, String, Text,
                         create_engine, MetaData, text)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import scoped_session, sessionmaker
-
+from campaign import logger, LOG
+from campaign.views import api_version
 
 Base = declarative_base()
 
@@ -43,7 +43,8 @@ class Storage(StorageBase):
             self._connect()
             #TODO: add the most common index.
         except Exception, e:
-            logging.error('Could not initialize Storage "%s"', str(e))
+            logger.log(msg='Could not initialize Storage "%s"' % str(e),
+                       type='error', severity=LOG.CRITICAL)
             raise e
 
     def _connect(self):
@@ -64,7 +65,8 @@ class Storage(StorageBase):
             self.session = scoped_session(sessionmaker(bind=self.engine))()
             #self.metadata.create_all(self.engine)
         except Exception, e:
-            logging.error('Could not connect to db "%s"' % repr(e))
+            logger.log(msg='Could not connect to db "%s"' % repr(e),
+                       type='error', severity=LOG.EMERGENCY)
             raise e
 
     def health_check(self):
@@ -135,7 +137,7 @@ class Storage(StorageBase):
                "and coalesce(round(end_time / %s), %s) > %s " % (window,
                now + 1, now))
         if data.get('last_accessed'):
-            sql += "and created > :last_accessed "
+            sql += "and start_time + idle_time > :last_accessed "
             params['last_accessed'] = int(data.get('last_accessed'))
         for field in ['product', 'platform', 'channel', 'version', 'lang',
                       'locale']:
@@ -146,7 +148,6 @@ class Storage(StorageBase):
             data['idle_time'] = 0
         sql += "and coalesce(idle_time, 0) <= :idle_time "
         params['idle_time'] = data.get('idle_time')
-        # RDS doesn't like multiple order bys, sqllite doesn't like concat.
         sql += " order by priority desc, `specific` desc, created desc"
         if (self.settings.get('dbg.show_query', False)):
             print sql
@@ -165,7 +166,8 @@ class Storage(StorageBase):
                 # This uses the server string ID for redirect/tracking
                 'url': self.settings.get('redir.url', 'http://%s/%s%s') % (
                         self.settings.get('redir.host', 'localhost'),
-                        self.settings.get('redir.path', 'redirect/1/'),
+                        self.settings.get('redir.path',
+                                          'redirect/%s/' % api_version),
                         item.id)})
             result.append(note)
         return result

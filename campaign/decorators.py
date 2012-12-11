@@ -1,7 +1,7 @@
 import json
 import pyramid.httpexceptions as http
 import random
-from campaign import logger
+from campaign import logger, LOG
 from campaign.auth.default import DefaultAuth
 from dateutil import parser
 from pyramid.request import Request
@@ -25,7 +25,8 @@ class checkService(object):
                 delay_until = max(int(parser.parse(
                     delay_until).strftime('%s')) - int(time()), 0)
             except ValueError, e:
-                logger.error("Could not calculate delay:", str(e))
+                logger.log(msg="Could not calculate delay: " + str(e),
+                           type="error")
                 delay_until = 0
             if delay_until > 0:
                 delay_until += random.randrange(0, delay_fuzz)
@@ -52,7 +53,7 @@ class authorizedOnly(object):
         settings = request.registry.settings
         try:
             domains = json.loads(settings.get('auth.valid.domains',
-                '["@mozilla.com", "@mozilla.org"]'))
+                                 '["@mozilla.com", "@mozilla.org"]'))
             for valid_domain in domains:
                 if email.lower().endswith(valid_domain):
                     return True
@@ -106,7 +107,7 @@ class authorizedOnly(object):
             if settings.get('dbg.break_unknown_exception', False):
                 import pdb
                 pdb.set_trace()
-            logger.error(str(e))
+            logger.log(type='error', severity=LOG.ERROR, msg=str(e))
             return False
         # User Logged in
         return True

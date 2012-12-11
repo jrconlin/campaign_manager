@@ -9,6 +9,7 @@ from mozsvc.config import load_into_settings
 from mozsvc.middlewares import _resolve_name
 from campaign.logger import Logging
 
+logger = None
 
 def get_group(group_name, dictionary):
     if group_name is None:
@@ -53,18 +54,20 @@ def self_diag(config):
 
 
 def main(global_config, **settings):
+    global logger
     load_into_settings(global_config['__file__'], settings)
     config = Configurator(root_factory=Root, settings=settings)
     config.include("cornice")
     config.include("pyramid_beaker")
     config.include("mozsvc")
     config.scan("campaign.views")
+    logger = Logging(config, global_config['__file__'])
     config.registry['storage'] = _resolve_name(
                                     settings.get('db.backend',
                                     'campaign.storage.sql.Storage'))(config)
     config.registry['auth'] = configure_from_settings('auth',
                                     settings['config'].get_map('auth'))
-    config.registry['logger'] = Logging(config, global_config['__file__'])
+    config.registry['logger'] = logger
     if settings.get('dbg.self_diag', False):
         self_diag(config)
     config.registry['logger'].log('Starting up', fields='',
@@ -77,7 +80,7 @@ class LOG:
     ALERT = 1
     CRITICAL = 2
     ERROR = 3
-    WARNING = 4
+    WARNING = WARN = 4
     NOTICE = 5
-    INFORMATIONAL = 6
+    INFORMATIONAL = INFO = 6
     DEBUG = 7

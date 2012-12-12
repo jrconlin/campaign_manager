@@ -130,17 +130,12 @@ class Storage(StorageBase):
         if window == 0:
             window = 1
         now = int(time.time() / window)
-        sql = ("select id, note, priority, `specific`, "
-               "created from %s where " % self.__tablename__ +
+        sql = ("select created, id, note, priority, `specific`, "
+               "start_time from %s where " % self.__tablename__ +
                " coalesce(round(start_time / %s), %s) < %s " % (window,
                now - 1, now) +
                "and coalesce(round(end_time / %s), %s) > %s " % (window,
                now + 1, now))
-        if data.get('last_accessed'):
-            params['last_accessed'] = int(data.get('last_accessed'))
-            sql += ("and coalesce(round(start_time / %s), %s) " %
-                    (window, now - 1)) + (" + %s > :last_accessed "
-                                          % params['last_accessed'])
         for field in ['product', 'platform', 'channel', 'version', 'lang',
                       'locale']:
             if data.get(field):
@@ -160,6 +155,11 @@ class Storage(StorageBase):
         items = self.engine.execute(text(sql), **dict(params))
         result = []
         for item in items:
+            # last_accessed may be actually set to 'None'
+            last_accessed = int(data.get('last_accessed') or '0')
+            if (last_accessed and
+                    last_accessed > (item.start_time or item.created)):
+                continue
             note = json.loads(item.note)
             note.update({
                 # ID in this case is a unique integer per CM record

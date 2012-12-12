@@ -73,8 +73,12 @@ def get_last_accessed(request):
             last_accessed_str = request.headers.get('If-Modified-Since')
             last_accessed = str(int(time.mktime(
                 eut.parsedate(last_accessed_str))))
-            logger.log(type='campaign', severity=LOG.DEBUG,
-                       msg='I-M-S: ' + last_accessed_str, fields={})
+            if request.registry['logger']:
+                request.registry['logger'].log(type='campaign',
+                                               severity=LOG.DEBUG,
+                                               msg='I-M-S: ' +
+                                                   last_accessed_str,
+                                               fields={})
     except Exception, e:
         settings = request.registry.settings
         if settings.get('dbg.traceback', False):
@@ -92,9 +96,9 @@ def get_last_accessed(request):
 def log_fetched(request, reply):
     rlogger = request.registry['logger']
     rlogger.log(type='log',
-               severity=LOG.NOTICE,
-               msg='fetched',
-               fields=json.dumps(reply['announcements']))
+                severity=LOG.NOTICE,
+                msg='fetched',
+                fields=json.dumps(reply['announcements']))
 
 
 @fetch.get()
@@ -113,6 +117,7 @@ def get_announcements(request):
     except Exception, e:
         rlogger.log(type='log', severity=LOG.ERROR,
                 msg='EXCEPTION: %s' % str(e))
+        raise http.HTTPServerError
     rlogger.log(type='log', severity=LOG.NOTICE,
                msg='fetch_query', fields=args)
     if not len(reply['announcements']):

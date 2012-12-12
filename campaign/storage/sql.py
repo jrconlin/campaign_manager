@@ -138,10 +138,9 @@ class Storage(StorageBase):
                now + 1, now))
         if data.get('last_accessed'):
             params['last_accessed'] = int(data.get('last_accessed'))
-            idle_secs = 86400 * params['last_accessed']
             sql += ("and coalesce(round(start_time / %s), %s) " %
                     (window, now - 1)) + (" + %s > :last_accessed "
-                                          % (now - idle_secs))
+                                          % params['last_accessed'])
         for field in ['product', 'platform', 'channel', 'version', 'lang',
                       'locale']:
             if data.get(field):

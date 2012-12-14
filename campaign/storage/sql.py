@@ -129,13 +129,13 @@ class Storage(StorageBase):
         window = int(self.settings.get('db.query_window', 1))
         if window == 0:
             window = 1
-        now = int(time.time() / window)
+        now = int(time.time() / window) * window
         sql = ("select created, id, note, priority, `specific`, "
                "start_time from %s where " % self.__tablename__ +
-               " coalesce(round(start_time / %s), %s) < %s " % (window,
-               now - 1, now) +
-               "and coalesce(round(end_time / %s), %s) > %s " % (window,
-               now + 1, now))
+               " coalesce((round(start_time / %s) * %s), %s) < %s " % (window,
+                   window, now - 1, now) +
+               "and coalesce((round(end_time / %s) * %s), %s) > %s " % (window,
+                   window, now + 1, now))
         for field in ['product', 'platform', 'channel', 'version', 'lang',
                       'locale']:
             if data.get(field):

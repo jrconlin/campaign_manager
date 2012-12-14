@@ -67,7 +67,7 @@ class StorageBase(object):
                     'text': data.get('note')
                 }),
                 'dest_url': data.get('dest_url'),
-                'start_time': data.get('start_time', now),
+                'start_time': max(now, data.get('start_time', now)),
                 'end_time': data.get('end_time'),
                 'author': data.get('author'),
                 'created': data.get('created', now),

@@ -52,7 +52,7 @@ header button {text-align:right;}
 #new_item label {display:inline-block;min-width:5em;text-align:right;line-height:90%;vertical-align:middle;}
 #new_item label:before {content:"\A";white-space:pre; }
 #new_item .note label {display:block;text-align:left;}
-#new_item input{
+#new_item select, #new_item input{
 height: 20px;
 background: none repeat scroll 0% 0% rgb(255, 255, 255);
 border-color: rgb(178, 178, 178);
@@ -65,7 +65,14 @@ border-radius: 3px 3px 3px 3px;
 box-shadow: 0px 1px rgba(255, 255, 255, 0.5);
 transition: all 0.1s linear 0s;
 }
-#new_item input:hover, #new_item input:focus {
+#new_item input[type^="datetime"] { width:16em;}
+#new_item select {
+    padding:0;
+    line-height:20px;
+    appearance: none;
+    outline: none;
+}
+#new_item select:hover, #new_item input:hover, #new_item input:focus {
 border-color: rgb(66, 164, 224);
 box-shadow: 0px 0px 0px 2px rgba(73, 173, 227, 0.4);
 transition: all 0.1s linear 0s;
@@ -109,3 +116,4 @@ text-decoration: none;
 transition: all 0.25s linear 0s;
 }
 #browserid {margin: 1em;}
+.priority {display:none !important;}

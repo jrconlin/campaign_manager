@@ -108,7 +108,9 @@ def get_announcements(request):
     # get the valid user information from the request.
     rlogger = request.registry.get('logger')
     storage = request.registry.get('storage')
-    args = request.matchdict
+    import pdb; pdb.set_trace()
+    args = dict(request.GET)
+    args.update(request.matchdict)
     args.update(get_lang_loc(request))
     last_accessed = get_last_accessed(request)
     args.update(last_accessed)

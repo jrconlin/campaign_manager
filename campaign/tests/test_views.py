@@ -103,8 +103,8 @@ class ViewTest(unittest2.TestCase):
         # idle number
         response = views.get_announcements(self.req(matchdict={'channel': 'a',
                               'platform': 'a',
-                              'version': 0,
-                              'idle_time': 6}))
+                              'version': 0},
+                              params={'idle', '6'}))
         eq_(len(json.loads(response.body)['announcements']), 4)
         timestamp = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
                                   time.gmtime(time.time() + 60))

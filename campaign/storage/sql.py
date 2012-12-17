@@ -141,8 +141,12 @@ class Storage(StorageBase):
             if data.get(field):
                 sql += "and coalesce(%s, :%s) = :%s " % (field, field, field)
                 params[field] = data.get(field)
-        if not data.get('idle_time'):
-            data['idle_time'] = 0
+        data['idle_time'] = data.get('idle', 0)
+        try:
+            if params.get('version'):
+                params['version'] = int(params['version'])
+        except ValueError:
+            pass
         sql += "and coalesce(idle_time, 0) <= :idle_time "
         params['idle_time'] = data.get('idle_time')
         sql += " order by priority desc, `specific` desc, created desc"
@@ -152,7 +156,10 @@ class Storage(StorageBase):
         if (self.settings.get('db.limit')):
             sql += " limit :limit"
             params['limit'] = self.settings.get('db.limit')
-        items = self.engine.execute(text(sql), **dict(params))
+        try:
+            items = self.engine.execute(text(sql), **dict(params))
+        except Exception, e:
+            import pdb; pdb.set_trace();
         result = []
         for item in items:
             # last_accessed may be actually set to 'None'

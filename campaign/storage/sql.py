@@ -159,7 +159,8 @@ class Storage(StorageBase):
         try:
             items = self.engine.execute(text(sql), **dict(params))
         except Exception, e:
-            import pdb; pdb.set_trace();
+            logger.log(msg='SQL Error "%s" ' % str(e),
+                       type='error', severity=LOG.CRITICAL)
         result = []
         for item in items:
             # last_accessed may be actually set to 'None'

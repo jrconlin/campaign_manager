@@ -66,6 +66,7 @@ class ViewTest(unittest2.TestCase):
                     self.settings = settings
 
         request = Request(headers=headers, **kw)
+        request.GET = kw.get('params',{})
         request.registry = Reg(settings=self.config.get_settings())
         request.registry['storage'] = self.storage
         request.registry['logger'] = self.logger
@@ -78,7 +79,7 @@ class ViewTest(unittest2.TestCase):
     def setUp(self):
         self.config = testing.setUp()
         tsettings = TConfig({'db.type': 'sqlite',
-                             'db.db': '/tmp/test.db',
+                             'db.db': ':memory:',
                              'logging.use_metlog': False})
         self.storage = Storage(config=tsettings)
         self.logger = Logging(tsettings, None)
@@ -104,7 +105,7 @@ class ViewTest(unittest2.TestCase):
         response = views.get_announcements(self.req(matchdict={'channel': 'a',
                               'platform': 'a',
                               'version': 0},
-                              params={'idle', '6'}))
+                              params={'idle': '6'}))
         eq_(len(json.loads(response.body)['announcements']), 4)
         timestamp = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
                                   time.gmtime(time.time() + 60))

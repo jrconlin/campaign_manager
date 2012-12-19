@@ -25,6 +25,7 @@ class TestStorage(unittest2.TestCase):
 
     def tearDown(self):
         self.storage.purge()
+        del self.storage
 
     def test_health_check(self):
         result = self.storage.health_check()
@@ -41,16 +42,14 @@ class TestStorage(unittest2.TestCase):
     def update_note(self, announce, note_text):
         return announce.copy()
 
-    def test_search(self):
-        """ Yes, this test does a lot of things. That's because I need
-        to exercise the search algo using a lot of records. """
-        # really wish that update allowed chaining.
+    def reload(self):
+        records=[]
         updates = [{'lang': None, 'locale': None, 'title': 'Everyone'},
             {'platform': 'a', 'channel': 'a', 'title': 'p:a;c:a'},
             {'platform': 'b', 'channel': 'a', 'title': 'p:b;c:a'},
             {'platform': 'a', 'start_time': self.now + 1,
-                'end_time': self.now + 3, 'title': 'notyet'},
-            {'platform': 'a', 'end_time': self.now - 5, 'title': 'tooold'},
+                'end_time': self.now + 30, 'title': 'notyet'},
+            {'platform': 'a', 'end_time': self.now - 50, 'title': 'tooold'},
             {'platform': 'a', 'idle_time': 10, 'title': 'idle: 10'},
             {'platform': 'a', 'channel': 'b', 'lang': 'a', 'locale': 'a',
                 'idle_time': 10, 'title': 'full_rec'}
@@ -59,26 +58,42 @@ class TestStorage(unittest2.TestCase):
         for update in updates:
             test = self.test_announce.copy()
             test.update(update)
-            self.storage.put_announce(test)
+            records.append(test)
+        self.storage.put_announce(records)
+        #time.sleep(3);
+
+    def test_search(self):
+        """ Yes, this test does a lot of things. That's because I need
+        to exercise the search algo using a lot of records. """
+        # really wish that update allowed chaining.
+        self.reload()
         data = {'platform': 'f', 'channel': 'f', 'version': 0}
-        announce = self.storage.get_announce(data)
+        announce = self.storage.get_announce(data, now=self.now + 10)
         self.assertEqual(len(announce), 1)
         self.assertEqual(announce[0]['title'], 'Everyone')
+
+    def test_search1(self):
+        self.reload()
         data = {'platform': 'a', 'channel': 'a'}
-        announce = self.storage.get_announce(data)
+        import pdb; pdb.set_trace()
+        announce = self.storage.get_announce(data, now=self.now + 10)
         # only Everyone and p: a;c: a should be returned.
         print "P&C check:"
         self.assertEqual(len(announce), 2)
         # Make sure the most specific entry is returned first.
         self.assertEqual(announce[0].get('title'), 'p:a;c:a')
 
+    def test_search2(self):
+        self.reload()
         data = {'platform': 'a', 'channel': 'a', 'idle_time': 15}
-        announce = self.storage.get_announce(data)
+        announce = self.storage.get_announce(data, now=self.now + 10)
         print "Idle Check:"
         self.assertEqual(len(announce), 3)
 
+    def test_search3(self):
+        self.reload()
         data = {'platform': 'a', 'channel': 'b'}
-        announce = self.storage.get_announce(data)
+        announce = self.storage.get_announce(data, now=self.now + 10)
         print "P&C2 check:"
         self.assertEqual(len(announce), 1)
         # Store the unique record data for the resolve check.
@@ -86,15 +101,14 @@ class TestStorage(unittest2.TestCase):
         goat_id = resolve_rec['url'].split('/').pop()
 
         data = {'platform': 'a', 'channel': 'a'}
-        time.sleep(self.now + 2 - int(time.time()))
-        print "Wake check: %s " % (int(time.time()) - self.now)
-        announce = self.storage.get_announce(data)
+        print self.now + 2 - int(time.time())
+        print "Wake check: %s " % (self.now + 2)
+        announce = self.storage.get_announce(data, now=self.now + 20)
         self.assertEqual(len(announce), 3)
 
-        time.sleep(self.now + 4 - int(time.time()))
-        print "Expire check: %s " % (int(time.time()) - self.now)
+        print "Expire check: %s " % (self.now + 10)
         data = {'platform': 'a', 'channel': 'a'}
-        announce = self.storage.get_announce(data)
+        announce = self.storage.get_announce(data, now=self.now + 100)
         self.assertEqual(len(announce), 2)
 
         # Since we have an ID for a unique record, query it to make

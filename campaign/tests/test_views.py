@@ -31,7 +31,7 @@ def Request(params=None, post=None, matchdict=None, headers=None,
 
 class ViewTest(unittest2.TestCase):
 
-    now = int(time.time())
+    now = 10
 
     base_record = {
         'start_time': int(now),
@@ -83,10 +83,13 @@ class ViewTest(unittest2.TestCase):
                              'logging.use_metlog': False})
         self.storage = Storage(config=tsettings)
         self.logger = Logging(tsettings, None)
+        records = []
         for diff in self.diffs:
             record = self.base_record.copy()
             record.update(diff)
-            self.storage.put_announce(record)
+            records.append(record)
+        self.storage.put_announce(records, now=self.now)
+        #time.sleep(3);
 
     def tearDown(self):
         self.storage.purge()
@@ -94,12 +97,14 @@ class ViewTest(unittest2.TestCase):
     def test_get_announcements(self):
         # normal number
         response = views.get_announcements(self.req(matchdict={'channel': 'a',
-                                           'platform': 'a', 'version': 0}))
+                                           'platform': 'a', 'version': 0}),
+                                           now=self.now)
         eq_(len(json.loads(response.body)['announcements']), 3)
         assert('Date' in response.headers)
         response = views.get_announcements(self.req(matchdict={'channel': 'a',
                                            'platform': 'a', 'version': 0},
-                                           headers={'Accept-Language': 'en'}))
+                                           headers={'Accept-Language': 'en'}),
+                                           now=self.now)
         eq_(len(json.loads(response.body)['announcements']), 3)
         # idle number
         response = views.get_announcements(self.req(matchdict={'channel': 'a',
@@ -108,7 +113,7 @@ class ViewTest(unittest2.TestCase):
                               params={'idle': '6'}))
         eq_(len(json.loads(response.body)['announcements']), 4)
         timestamp = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
-                                  time.gmtime(time.time() + 60))
+                                  time.gmtime(self.now))
         self.assertRaises(http.HTTPNotModified,
                           views.get_announcements,
                           self.req(matchdict={'channel': 'a',
@@ -175,7 +180,6 @@ class ViewTest(unittest2.TestCase):
                        user_id='foo@mozilla.com')
         response = views.manage_announce(req)
         # test create
-        time.sleep(2)  # Give the db a second to write the record.
         response = json.loads(views.get_announcements(self.req(
             matchdict={'channel': 'c'})).body)
         goat = None

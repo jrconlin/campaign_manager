@@ -103,7 +103,7 @@ def log_fetched(request, reply):
 
 @fetch.get()
 @checkService
-def get_announcements(request):
+def get_announcements(request, now=None):
     """Returns campaigns in JSON."""
     # get the valid user information from the request.
     rlogger = request.registry.get('logger')
@@ -117,7 +117,7 @@ def get_announcements(request):
     last_accessed = get_last_accessed(request)
     args.update(last_accessed)
     try:
-        reply = {'announcements': storage.get_announce(args)}
+        reply = {'announcements': storage.get_announce(args, now)}
     except Exception, e:
         rlogger.log(type='log', severity=LOG.ERROR,
                 msg='EXCEPTION: %s' % str(e))

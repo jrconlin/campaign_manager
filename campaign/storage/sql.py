@@ -62,7 +62,8 @@ class Storage(StorageBase):
                                                       self.__database__))
             self.engine = create_engine(dsn, pool_recycle=3600)
             Base.metadata.create_all(self.engine)
-            self.session = scoped_session(sessionmaker(bind=self.engine))()
+            self.Session = scoped_session(sessionmaker(bind=self.engine,
+                expire_on_commit=True))
             #self.metadata.create_all(self.engine)
         except Exception, e:
             logger.log(msg='Could not connect to db "%s"' % repr(e),
@@ -101,7 +102,15 @@ class Storage(StorageBase):
         result = dict(zip(items.keys(), row))
         return result
 
-    def put_announce(self, data):
+    def put_announce(self, data, sessionHandle=None, now=None):
+        if sessionHandle:
+            session = sessionHandle
+        else:
+            session = self.Session()
+        if isinstance(data, list):
+            for item in data:
+                self.put_announce(item, session)
+            return self
         if data.get('note') is None:
             raise StorageException('Incomplete record. Skipping.')
         specificity = 0
@@ -112,13 +121,17 @@ class Storage(StorageBase):
         if data.get('idle_time') and int(data.get('idle_time')) != 0:
             specificity += 1
         data['specific'] = specificity
-        snip = self.normalize_announce(data)
+        snip = self.normalize_announce(data, now)
         campaign = Campaign(**snip)
-        self.session.add(campaign)
-        self.session.commit()
+
+        session.add(campaign)
+        session.commit()
+        if not sessionHandle:
+            session.flush()
+            session.close()
         return self
 
-    def get_announce(self, data):
+    def get_announce(self, data, now=None):
         # Really shouldn't allow "global" variables, but I know full well
         # that they're going to want them.
         params = {}
@@ -129,7 +142,8 @@ class Storage(StorageBase):
         window = int(self.settings.get('db.query_window', 1))
         if window == 0:
             window = 1
-        now = int(time.time() / window) * window
+        if now is None:
+            now = int(time.time() / window) * window
         sql = ("select created, id, note, priority, `specific`, "
                "start_time from %s where " % self.__tablename__ +
                " coalesce((round(start_time / %s) * %s), %s) < %s " % (window,
@@ -194,12 +208,14 @@ class Storage(StorageBase):
 
     def del_announce(self, keys):
         #TODO: how do you safely do an "in (keys)" call?
+        session = self.Session()
         sql = 'delete from %s where id = :key' % self.__tablename__
         for key in keys:
             self.engine.execute(text(sql), {"key": key})
-        self.session.commit()
+        session.commit()
 
     def purge(self):
+        session = self.Session()
         sql = 'delete from %s;' % self.__tablename__
         self.engine.execute(text(sql))
-        self.session.commit()
+        session.commit()

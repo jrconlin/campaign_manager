@@ -47,8 +47,9 @@ class StorageBase(object):
             pass
         return None
 
-    def normalize_announce(self, data):
-        now = time()
+    def normalize_announce(self, data, now=None):
+        if now is None:
+            now = time()
         data['start_time'] = self.parse_date(data.get('start_time', now))
         data['end_time'] = self.parse_date(data.get('end_time'))
         for nullable in ('product', 'channel', 'platform', 'version', 'lang',

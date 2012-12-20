@@ -142,7 +142,6 @@ class Storage(StorageBase):
                 sql += "and coalesce(%s, :%s) = :%s " % (field, field, field)
                 params[field] = data.get(field)
         data['idle_time'] = data.get('idle', 0)
-        import pdb; pdb.set_trace();
         try:
             if 'version' in data:
                 sql +="and coalesce(version, :version) =  :version "

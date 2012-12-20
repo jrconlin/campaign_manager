@@ -132,20 +132,23 @@ class Storage(StorageBase):
         now = int(time.time() / window) * window
         sql = ("select created, id, note, priority, `specific`, "
                "start_time from %s where " % self.__tablename__ +
-               " coalesce((round(start_time / %s) * %s), %s) < %s " % (window,
+               " coalesce((cast(start_time / %s as int) * %s), %s) < %s " % (window,
                    window, now - 1, now) +
-               "and coalesce((round(end_time / %s) * %s), %s) > %s " % (window,
+               "and coalesce((cast(end_time / %s as int) * %s), %s) > %s " % (window,
                    window, now + 1, now))
-        for field in ['product', 'platform', 'channel', 'version', 'lang',
+        for field in ['product', 'platform', 'channel', 'lang',
                       'locale']:
             if data.get(field):
                 sql += "and coalesce(%s, :%s) = :%s " % (field, field, field)
                 params[field] = data.get(field)
         data['idle_time'] = data.get('idle', 0)
+        import pdb; pdb.set_trace();
         try:
-            if params.get('version'):
-                params['version'] = int(params['version'])
-        except ValueError:
+            if 'version' in data:
+                sql +="and coalesce(version, :version) =  :version "
+                params['version'] = data['version'].split('.')[0]
+        except Exception:
+            import pdb; pdb.set_trace()
             pass
         sql += "and coalesce(idle_time, 0) <= :idle_time "
         params['idle_time'] = data.get('idle_time')

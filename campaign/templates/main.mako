@@ -1,6 +1,7 @@
 <!doctype html>
 <%
-    from time import (strftime, gmtime)
+    from campaign.util import strToUTC
+    from time import (time, strftime, gmtime)
     import json
 
     vers = pageargs.get('version', 1)
@@ -8,11 +9,22 @@
     config = pageargs.get('config', {})
     announcements = pageargs.get('announcements', [])
     author = pageargs.get('author', 'UNKNOWN')
+    settings = pageargs.get('settings', {})
 
-    start_rel = int(pageargs.get('start_release', '10'))
-    current_rel = int(pageargs.get('current_release', '17'))
+    current_rel = int(settings.get('form.current_release', '17'))
+    start_adj = int(settings.get('form.start_adj', '4'))
+    # Firefox 17 released on 30 Nov 2012 00:00:00 UTC
+    current_rel_date = strToUTC(settings.get('form.current_release_date',
+        'Mon 30 Nov 2012 00:00:00 UTC'))
+    # 6 weeks =
+    release_period = int(pageargs.get('form.release_period', 3628800))
     nowstr = strftime("%a, %d %b %Y %H:%M:%S GMT", gmtime())
+    nowsec = time()
 
+    ver_adj = (int(nowsec) - current_rel_date) / release_period
+    current_rel = current_rel + ver_adj
+    start_rel = current_rel - start_adj
+    max_rel = current_rel + 4
 
 %>
 <html>
@@ -455,14 +467,17 @@
 </fieldset>
 <fieldset class="platform">
 <legend>On what?</legend>
-<label for="product">Product:</label><input type="text" name="product" value="android" />
+<label for="product">Product:</label><input type="text" name="product" value="${settings.get("form.product")}" />
 <label for="platform">Platform:</label>
 <select name="platform">
     <option selected>all</option>
-    <option value="armeabi-v7a">armeabi-v7a</option>
-    <option value="armeabi">armeabi</option>
-    <option value="mips">mips</option>
-    <option value="x86">x86</option>
+    <% platforms = settings.get('form.platforms',
+        'armeabi-v7a, armeabi, mips, x86').split(',')
+%>
+% for platform in platforms:
+<% platform = platform.strip() %>
+    <option value="${platform}">${platform}</option>
+% endfor
 </select>
 <label for="channel">Channel:</label>
 <select name="channel">
@@ -476,8 +491,12 @@
 <label for="version">Version:</label>
 <select name="version">
 <option value="all" selected>all</option>
-% for v in xrange(start_rel, current_rel+4):
+% for v in xrange(start_rel, max_rel):
+% if v == current_rel:
+<option value="${v}" class="current">${v}*</option>
+% else:
 <option value="${v}">${v}</option>
+% endif
 % endfor
 </select>
 </fieldset>

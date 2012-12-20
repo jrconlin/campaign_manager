@@ -5,15 +5,15 @@
 """
 from campaign import logger, LOG
 from decorators import checkService, authorizedOnly
-from email import utils as eut
 from mako.template import Template
 from mozsvc.metrics import Service
 from webob import Response
+from campaign.util import strToUTC
 import json
 import os
 import pyramid.httpexceptions as http
 import time
-import calendar
+
 
 api_version = 1
 
@@ -72,10 +72,8 @@ def get_last_accessed(request):
     try:
         if 'If-Modified-Since' in request.headers:
             last_accessed_str = request.headers.get('If-Modified-Since')
-            tz_time = eut.parsedate_tz(last_accessed_str)
+            last_accessed = strToUTC(last_accessed_str)
             # pop off tz adjustment (in seconds)
-            tz_adjustment = tz_time[9]
-            last_accessed = int(calendar.timegm(tz_time[:8])) + tz_adjustment
             if request.registry['logger']:
                 ims_str = time.strftime('%a, %d %b %Y %H:%M:%S GMT',
                                         time.gmtime(last_accessed))
@@ -184,6 +182,7 @@ def admin_page(request, error=None):
     tdata = get_all_announcements(request)
     tdata['author'] = request.session['uid']
     tdata['error'] = error
+    tdata['settings'] = request.registry.settings
     try:
         if 'javascript' in request.accept_encoding:
             if not error:

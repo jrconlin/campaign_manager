@@ -132,10 +132,10 @@ class Storage(StorageBase):
         now = int(time.time() / window) * window
         sql = ("select created, id, note, priority, `specific`, "
                "start_time from %s where " % self.__tablename__ +
-               " coalesce((cast(start_time / %s as int) * %s), %s) < %s " % (window,
-                   window, now - 1, now) +
-               "and coalesce((cast(end_time / %s as int) * %s), %s) > %s " % (window,
-                   window, now + 1, now))
+               " coalesce((cast(start_time / %s as unsigned) * %s), %s) < %s "
+               % (window, window, now - 1, now) +
+               "and coalesce((cast(end_time / %s as unsigned) * %s), %s) > %s "
+               % (window, window, now + 1, now))
         for field in ['product', 'platform', 'channel', 'lang',
                       'locale']:
             if data.get(field):
@@ -147,7 +147,6 @@ class Storage(StorageBase):
                 sql +="and coalesce(version, :version) =  :version "
                 params['version'] = data['version'].split('.')[0]
         except Exception:
-            import pdb; pdb.set_trace()
             pass
         sql += "and coalesce(idle_time, 0) <= :idle_time "
         params['idle_time'] = data.get('idle_time')

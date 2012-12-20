@@ -13,6 +13,7 @@ import json
 import os
 import pyramid.httpexceptions as http
 import time
+import calendar
 
 api_version = 1
 
@@ -71,13 +72,18 @@ def get_last_accessed(request):
     try:
         if 'If-Modified-Since' in request.headers:
             last_accessed_str = request.headers.get('If-Modified-Since')
-            last_accessed = str(int(time.mktime(
-                eut.parsedate(last_accessed_str))))
+            tz_time = eut.parsedate_tz(last_accessed_str)
+            # pop off tz adjustment (in seconds)
+            tz_adjustment = tz_time[9]
+            last_accessed = int(calendar.timegm(tz_time[:8])) + tz_adjustment
             if request.registry['logger']:
+                ims_str = time.strftime('%a, %d %b %Y %H:%M:%S GMT',
+                                        time.gmtime(last_accessed))
                 request.registry['logger'].log(type='campaign',
                                                severity=LOG.DEBUG,
-                                               msg='I-M-S: ' +
-                                                   last_accessed_str,
+                                               msg='I-M-S: %s (%s)' %
+                                                   (ims_str,
+                                                       last_accessed_str),
                                                fields={})
     except Exception, e:
         settings = request.registry.settings

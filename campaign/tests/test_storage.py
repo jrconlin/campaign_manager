@@ -75,7 +75,6 @@ class TestStorage(unittest2.TestCase):
     def test_search1(self):
         self.reload()
         data = {'platform': 'a', 'channel': 'a'}
-        import pdb; pdb.set_trace()
         announce = self.storage.get_announce(data, now=self.now + 10)
         # only Everyone and p: a;c: a should be returned.
         print "P&C check:"

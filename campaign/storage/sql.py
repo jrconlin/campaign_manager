@@ -30,6 +30,7 @@ class Campaign(Base):
     dest_url = Column('dest_url', Text)
     author = Column('author', String(255), index=True)
     created = Column('created', Integer, index=True)
+    title = Column('title', String(200))
 
 
 class Storage(StorageBase):
@@ -145,7 +146,7 @@ class Storage(StorageBase):
         if now is None:
             now = int(time.time() / window) * window
         sql = ("select created, id, note, priority, `specific`, "
-               "start_time from %s where " % self.__tablename__ +
+               "start_time, idle_time from %s where " % self.__tablename__ +
                " coalesce((cast(start_time / %s as unsigned) * %s), %s) < %s "
                % (window, window, now - 1, now) +
                "and coalesce((cast(end_time / %s as unsigned) * %s), %s) > %s "
@@ -180,9 +181,14 @@ class Storage(StorageBase):
         for item in items:
             # last_accessed may be actually set to 'None'
             last_accessed = int(data.get('last_accessed') or '0')
-            if (last_accessed and
-                    last_accessed > (item.start_time or item.created)):
-                continue
+            if last_accessed:
+                start = item.start_time or item.created
+                if (item.idle_time and
+                        last_accessed > start + (86400 * item.idle_time)):
+                        continue
+                else:
+                    if last_accessed > start:
+                        continue
             note = json.loads(item.note)
             note.update({
                 # ID in this case is a unique integer per CM record

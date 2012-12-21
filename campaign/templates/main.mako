@@ -43,7 +43,8 @@
 <!-- yep, this should be a REST get and display call. -->
 </header>
 <form id="new_item" action="${land}" method="POST">
-<h2>New Item</h2>
+    <h2>New Item</h2>
+    <label for="title">Campaign Name:<input name="title" /></label>
 <input type="hidden" name="author" value="${author}" />
 <fieldset class="times">
 <legend>When to show?</legend>
@@ -56,7 +57,7 @@
 <legend>What should they see?</legend>
 <label for="title">Title:</label><input type="text" name="title" placeholder="Free Puppies!"/>
 <label for="dest_url">Destination URL:</label><input type="text" name="dest_url" placeholder="http://example.org/"/>
-<label for="note">Note:</label><input type="text" name="note" placeholder="Who doesn't love free puppies?"/>
+<label for="note">Body:</label><input type="text" name="note" placeholder="Who doesn't love free puppies?"/>
 </fieldset>
 <fieldset class="locale">
 <legend>Who should see?</legend>

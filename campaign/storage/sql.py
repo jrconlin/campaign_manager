@@ -130,7 +130,7 @@ class Storage(StorageBase):
         if window == 0:
             window = 1
         now = int(time.time() / window) * window
-        sql = ("select created, id, note, priority, `specific`, "
+        sql = ("select id, note, priority, `specific`, "
                "start_time, idle_time from %s where " % self.__tablename__ +
                " coalesce((cast(start_time / %s as unsigned) * %s), %s) < %s "
                % (window, window, now - 1, now) +
@@ -150,7 +150,7 @@ class Storage(StorageBase):
             pass
         sql += "and coalesce(idle_time, 0) <= :idle_time "
         params['idle_time'] = data.get('idle_time')
-        sql += " order by priority desc, `specific` desc, created desc"
+        sql += " order by priority desc, `specific` desc, start_time desc"
         if (self.settings.get('dbg.show_query', False)):
             print sql
             print params
@@ -167,9 +167,9 @@ class Storage(StorageBase):
             # last_accessed may be actually set to 'None'
             last_accessed = int(data.get('last_accessed') or '0')
             if last_accessed:
-                start = item.start_time or item.created
+                start = item.start_time
                 if (item.idle_time and
-                        last_accessed > start + (86400 * item.idle_time)):
+                        last_accessed < start - (86400 * item.idle_time)):
                         continue
                 else:
                     if last_accessed > start:

@@ -130,7 +130,7 @@ class Storage(StorageBase):
         if window == 0:
             window = 1
         now = int(time.time() / window) * window
-        sql = ("select id, note, priority, `specific`, "
+        sql = ("select created, id, note, priority, `specific`, "
                "start_time, idle_time from %s where " % self.__tablename__ +
                " coalesce((cast(start_time / %s as unsigned) * %s), %s) < %s "
                % (window, window, now - 1, now) +
@@ -166,14 +166,9 @@ class Storage(StorageBase):
         for item in items:
             # last_accessed may be actually set to 'None'
             last_accessed = int(data.get('last_accessed') or '0')
-            if last_accessed:
-                start = item.start_time
-                if (item.idle_time and
-                        last_accessed < start - (86400 * item.idle_time)):
-                        continue
-                else:
-                    if last_accessed > start:
-                        continue
+            if (last_accessed and
+                    last_accessed > (item.start_time or item.created)):
+                continue
             note = json.loads(item.note)
             note.update({
                 # ID in this case is a unique integer per CM record

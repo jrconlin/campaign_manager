@@ -130,7 +130,7 @@ class Storage(StorageBase):
         if window == 0:
             window = 1
         now = int(time.time() / window) * window
-        sql = ("select id, note, priority, `specific`, "
+        sql = ("select created, id, note, priority, `specific`, "
                "start_time, idle_time from %s where " % self.__tablename__ +
                " coalesce((cast(start_time / %s as unsigned) * %s), %s) < %s "
                % (window, window, now - 1, now) +

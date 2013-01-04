@@ -18,8 +18,17 @@
         'Mon 30 Nov 2012 00:00:00 UTC'))
     # 6 weeks =
     release_period = int(pageargs.get('form.release_period', 3628800))
-    nowstr = strftime("%a, %d %b %Y %H:%M:%S GMT", gmtime())
+    nowstr = strftime(time_fmt, gmtime())
     nowsec = time()
+
+    ver_adj = (int(nowsec) - current_rel_date) / release_period
+    current_rel = current_rel + ver_adj
+    start_rel = current_rel - start_adj
+    max_rel = current_rel + 4
+
+    campaign_end = int(nowsec / 86400) * 86400 + \
+        int(pageargs.get('default.campaign_length', 14)) * 86400
+    campaign_end_str = strftime(time_fmt, gmtime(campaign_end))
 
     ver_adj = (int(nowsec) - current_rel_date) / release_period
     current_rel = current_rel + ver_adj
@@ -45,12 +54,13 @@
 <form id="new_item" action="${land}" method="POST">
     <h2>New Item</h2>
     <label for="title">Campaign Name:<input name="title" /></label>
-<input type="hidden" name="author" value="${author}" />
+    <input type="hidden" name="author" value="${author}" />
+    <span class="hidden" id="alert"><b>Caution:</b> Campaign conflicts with highlited campaigns.</span>
 <fieldset class="times">
 <legend>When to show?</legend>
 <span class="priority"><label for="priority">Priority(0=lowest):</label><input type="number" name="priority" value="0" /></span>
 <label for="start_time">Start time:</label><input type="datetime-local" name="start_time" value="" placeholder="${nowstr}"/>
-<label for="end_time">End time:</label><input type="datetime-local" name="end_time" value="" placeholder="Forever" />
+<label for="end_time">End time:</label><input type="datetime-local" name="end_time" value="${campaign_end_str}" placeholder="${campaign_end_str}" />
 <label for="idle_time">Idle time(days):</label><input type="number" name="idle_time" value="0" />
 </fieldset>
 <fieldset class="note">
@@ -468,7 +478,7 @@
 </fieldset>
 <fieldset class="platform">
 <legend>On what?</legend>
-<label for="product">Product:</label><input type="text" name="product" value="${settings.get("form.product")}" />
+<label for="product">Product:</label><input type="text" name="product" value="${settings.get("form.product", "android")}" />
 <label for="platform">Platform:</label>
 <select name="platform">
     <option selected>all</option>
@@ -558,21 +568,30 @@
     if not dnote.get('version'):
         dnote['version'] = '<i>All versions</i>'
 %>
-<div class="record row">
+<div class="record row" id="${dnote['id']}"
+    data-start_time="${int(note.start_time or 0)}"
+    data-end_time="${int(note.end_time or 9999999999)}"
+    data-idle_time="${note['idle_time'] or 0}"
+    data-lang="${note['lang'] or ""}"
+    data-locale="${note['locale'] or ""}"
+    data-product="${note['product'] or ""}"
+    data-platform="${note['platform'] or ""}"
+    data-channel="${note['channel'] or ""}"
+    data-version="${note['version'] or ""}">
 <div class="delete"><input type="checkbox" value="${note.id}"></div>
-<div class="id"><a href="/redirect/${vers}/${dnote['id']}">${dnote['id']}</a></div>
 <div class="priority">${dnote['priority']}</div>
+<div class="id"><a href="/redirect/${vers}/${dnote['id']}">${dnote['title']}</a></div>
 <div class="created">${strftime(time_format, gmtime(dnote['created']))}</div>
-<div class="start_time">${dnote['start_time']}</div>
-<div class="end_time">${dnote['end_time']}</div>
-<div class="idle_time">${dnote['idle_time']} days</div>
-<div class="lang">${dnote['lang']}</div>
-<div class="locale">${dnote['locale']}</div>
-<div class="product">${dnote['product']}</div>
-<div class="channel">${dnote['channel']}</div>
-<div class="version">${dnote['version']}</div>
-<div class="platform">${dnote['platform']}</div>
-<div class="author">${dnote['author']}></div>
+<div class="start_time" >${dnote['start_time']}</div>
+<div class="end_time" >${dnote['end_time']}</div>
+<div class="idle_time" >${dnote['idle_time']} days</div>
+<div class="lang" >${dnote['lang']}</div>
+<div class="locale" >${dnote['locale']}</div>
+<div class="product" >${dnote['product']}</div>
+<div class="channel" >${dnote['channel']}</div>
+<div class="version" >${dnote['version']}</div>
+<div class="platform" >${dnote['platform']}</div>
+<div class="author">${dnote['author']}</div>
 <div class="note">${dnote['note']}</div>
 <div class="dest_url">${dnote['dest_url']}</div>
 </div>
@@ -598,7 +617,84 @@
                     $(".logout").disable();
                     }
             });
-    });
+            });
+$("#new_item input").change(function() {
+        var dv;
+        var conflict = false;
+        var errors = [];
+        var cstart = Math.floor(Date.now()/1000);
+        var form = document.getElementById('new_item');
+        dv = form.start_time.value;
+        if (dv) {
+            try {
+                cstart = Math.floor(Date.parse(dv)/1000);
+            } catch (e) {}
+        }
+        var cend = 9999999999;
+        dv = form.end_time.value;
+        if (dv) {
+            try {
+                cend = Math.floor(Date.parse(dv)/1000);
+            } catch (e) {}
+        }
+        if (cend == 9999999999) {
+           errors.push({'id': 0, 'reason': "Campaign is eternal"});
+           if (! form.end_time.classList.contains('error')){
+               form.end_time.classList.add('error');
+           }
+        } else {
+            form.end_time.classList.remove('error');
+        }
+
+        var rows=document.getElementById('data').getElementsByClassName('record');
+        for (var rl = 0; rl < rows.length; rl++){
+            var row = rows[rl];
+            if (row == undefined) continue;
+            var id = row.id;
+            var jqi = $('#'+id);
+            var start = parseInt(row.dataset.start_time);
+            var end = parseInt(row.dataset.end_time);
+            var idle = parseInt(row.dataset.idle_time) || 0;
+            var lang = (row.dataset.lang || form.lang.value || "").toLowerCase();
+            var locale = (row.dataset.locale || form.locale.value || "").toLowerCase();
+            var product = (row.dataset.product || form.product.value).toLowerCase();
+            var platform = (row.dataset.platform || form.platform.value).toLowerCase();
+            var channel = (row.dataset.channel || form.channel.value).toLowerCase();
+            var version = row.dataset.version || form.version.value || "all";
+            row.classList.remove('warning');
+            console.debug(id, cend, end);
+            if (cend < end &&
+                idle >= (form.idle_time.value || "0") &&
+                lang == (form.lang.value || "").toLowerCase() &&
+                locale == (form.locale.value || "").toLowerCase() &&
+                platform == (form.platform.value || "").toLowerCase() &&
+                product == (form.product.value || "").toLowerCase() &&
+                channel == (form.channel.value || "").toLowerCase() &&
+                version == (form.version.value || "all").toLowerCase()
+                ){
+                    console.log('bad row', id);
+                    errors.push({'id': id,
+                        'reason': 'campaign overlaps ' + id});
+                    if (!row.classList.contains('warning')){
+                        row.classList.add('warning');
+                    }
+            }
+        }
+        var warn = document.getElementById('alert');
+        if (errors.length) {
+            if (warn.classList.contains('hidden')){
+                warn.classList.remove('hidden');
+            }
+            for (var el=0; el < errors.length; el++) {
+                console.error(errors[el].reason);
+            }
+        } else {
+            if (!warn.classList.contains('hidden')) {
+                warn.classList.add('hidden');
+            }
+        }
+
+});
 $("#bidjs").ready(function() {
         navigator.id.watch({loggedInUser: '${author}',
             onlogin: function() {console.debug('main-login')},
@@ -620,9 +716,9 @@ $("#bidjs").ready(function() {
         console.debug(deleteables);
         $.ajax({url: "${land}",
             type: "POST",
-            data: {"delete": deleteables},
+            data: {"delete": deleteables.join()},
             success: function(data, status, xhr) {
-            document.location = "${land}";
+                document.location = "${land}";
             },
             error: function(xhr, status, error) {
                 alert(error);

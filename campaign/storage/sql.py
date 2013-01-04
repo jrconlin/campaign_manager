@@ -30,7 +30,7 @@ class Campaign(Base):
     dest_url = Column('dest_url', Text)
     author = Column('author', String(255), index=True)
     created = Column('created', Integer, index=True)
-    title = Column('title', String(200))
+    title = Column('title', String(50))
 
 
 class Storage(StorageBase):
@@ -165,7 +165,7 @@ class Storage(StorageBase):
             pass
         sql += "and coalesce(idle_time, 0) <= :idle_time "
         params['idle_time'] = data.get('idle_time')
-        sql += " order by priority desc, `specific` desc, created desc"
+        sql += " order by priority desc, `specific` desc, start_time desc"
         if (self.settings.get('dbg.show_query', False)):
             print sql
             print params

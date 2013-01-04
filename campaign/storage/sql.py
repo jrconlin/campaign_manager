@@ -30,6 +30,7 @@ class Campaign(Base):
     dest_url = Column('dest_url', Text)
     author = Column('author', String(255), index=True)
     created = Column('created', Integer, index=True)
+    title = Column('title', String(50))
 
 
 class Storage(StorageBase):

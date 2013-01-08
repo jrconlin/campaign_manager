@@ -1,3 +1,4 @@
+@import url(http://fonts.googleapis.com/css?family=Droid+Sans);
 @font-face {
 font-family: 'Open Sans';
 src: url('//www.mozilla.org/img/fonts/OpenSans-Regular-webfont.eot');
@@ -79,11 +80,10 @@ transition: all 0.1s linear 0s;
 }
 #select_all,#clear  {display:none;}
 #existing {position:relative;margin-top:2em;}
-#existing .row {display:table-row;}
 #existing .row:nth-child(even){background-color:rgba(255,255,255,0.50);}
 #existing .head {font-weight: bold; }
-#existing .row div {display:table-cell;padding:2px;}
-#existing .row div:nth-child(even){background-color:rgba(255,255,255,0.50);}
+#existing .row td {padding:2px;}
+#existing .row td:nth-child(even){background-color:rgba(255,255,255,0.50);}
 #existing .head  {text-align:center; vertical-align:top;}
 #existing .row .delete {text-align:center;vertical-align:middle;}
 #existing .head .delete {text-align:center; vertical-align:top;}
@@ -119,6 +119,13 @@ transition: all 0.25s linear 0s;
 .priority {display:none !important;}
 .warning div {background-color: yellow;}
 .hidden {display:none !important;}
-#alert {border: 1px solid red;}
 .error {border: 1px solid red;}
 #new_item .error {background-color: red; }
+.metrics {padding-bottom: 1em; }
+.metrics a.announce { width:340px;}
+.metrics .announce {font-family:'Droid Sans';
+    display:block; padding-left: 40px;}
+.metrics .announce {text-decoration:none; color:#FFF; background: #000; background:-moz-linear-gradient(left, #114244 0%, #114244 10%, #000000 10%, #000000 100%);}
+.metrics .announce span {display: block; }
+.metrics .announce .title {font-weight: bold;}
+.metrics .announce .body {background-color: #000 important;font-size: 80%; color: #DDD;}

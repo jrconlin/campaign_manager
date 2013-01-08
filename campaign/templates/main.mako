@@ -11,6 +11,8 @@
     author = pageargs.get('author', 'UNKNOWN')
     settings = pageargs.get('settings', {})
 
+    time_fmt = '%a, %d %b %Y - %H:%M:%S GMT'
+
     current_rel = int(settings.get('form.current_release', '17'))
     start_adj = int(settings.get('form.start_adj', '4'))
     # Firefox 17 released on 30 Nov 2012 00:00:00 UTC
@@ -53,7 +55,7 @@
 </header>
 <form id="new_item" action="${land}" method="POST">
     <h2>New Item</h2>
-    <label for="title">Campaign Name:<input name="title" /></label>
+    <label for="ctitle">Campaign Name:<input name="ctitle" /></label>
     <input type="hidden" name="author" value="${author}" />
     <span class="hidden" id="alert"><b>Caution:</b> Campaign conflicts with highlited campaigns.</span>
 <fieldset class="times">
@@ -67,7 +69,7 @@
 <legend>What should they see?</legend>
 <label for="title">Title:</label><input type="text" name="title" placeholder="Free Puppies!"/>
 <label for="dest_url">Destination URL:</label><input type="text" name="dest_url" placeholder="http://example.org/"/>
-<label for="note">Body:</label><input type="text" name="note" placeholder="Who doesn't love free puppies?"/>
+<label for="body">Body:</label><input type="text" name="body" placeholder="Who doesn't love free puppies?"/>
 </fieldset>
 <fieldset class="locale">
 <legend>Who should see?</legend>
@@ -521,24 +523,23 @@
 <button class="button" id="clear" name="clear_all">Clear selected</button>
 <button class="button" id="delete" name="delete">Delete Selected</button>
 </div>
-<div id="data">
-<div class="head row">
-<div class="delete">Delete?</div>
-<div class="id">ID</div>
-<div class="priority">Priority</div>
-<div class="created">Created</div>
-<div class="start_time">Start Time</div>
-<div class="end_time">End Time</div>
-<div class="idle_time">Idle Time</div>
-<div class="lang">Language</div>
-<div class="locale">Locale</div>
-<div class="product">Product</div>
-<div class="channel">Channel</div>
-<div class="version">Version</div>
-<div class="platform">Platform</div>
-<div class="author">Author</div>
-<div class="note">Note</div>
-<div class="dest_url">Destination URL</div>
+<table id="data">
+<tr>
+<th class="head row">
+<th class="delete">Delete?</th>
+<th class="id">ID</th>
+<th class="priority">Priority</th>
+<th class="created">Created</th>
+<th class="start_time">Start Time</th>
+<th class="idle_time">Idle Time</th>
+<th class="lang">Language</th>
+<th class="locale">Locale</th>
+<th class="product">Product</th>
+<th class="channel">Channel</th>
+<th class="version">Version</th>
+<th class="platform">Platform</th>
+<th class="author">Author</th>
+<th class="dest_url">Destination URL</th>
 </div>
 <%
     time_format = '%a, %d %b %Y - %H:%M:%S GMT'
@@ -547,6 +548,7 @@
 %for note in announcements:
 <%
     dnote = dict(note);
+
     if dnote.get('start_time'):
         dnote['start_time'] = strftime(time_format, gmtime(note.start_time))
     else:
@@ -567,8 +569,13 @@
         dnote['platform'] = '<i>All platforms</i>'
     if not dnote.get('version'):
         dnote['version'] = '<i>All versions</i>'
+    anote = json.loads(dnote.get('note','{}'))
+    rtitle = dnote.get('title','')
+    if not len(rtitle):
+        rtitle = dnote.get('id')
+
 %>
-<div class="record row" id="${dnote['id']}"
+<tr class="record row" id="${dnote['id']}"
     data-start_time="${int(note.start_time or 0)}"
     data-end_time="${int(note.end_time or 9999999999)}"
     data-idle_time="${note['idle_time'] or 0}"
@@ -578,25 +585,37 @@
     data-platform="${note['platform'] or ""}"
     data-channel="${note['channel'] or ""}"
     data-version="${note['version'] or ""}">
-<div class="delete"><input type="checkbox" value="${note.id}"></div>
-<div class="priority">${dnote['priority']}</div>
-<div class="id"><a href="/redirect/${vers}/${dnote['id']}">${dnote['title']}</a></div>
-<div class="created">${strftime(time_format, gmtime(dnote['created']))}</div>
-<div class="start_time" >${dnote['start_time']}</div>
-<div class="end_time" >${dnote['end_time']}</div>
-<div class="idle_time" >${dnote['idle_time']} days</div>
-<div class="lang" >${dnote['lang']}</div>
-<div class="locale" >${dnote['locale']}</div>
-<div class="product" >${dnote['product']}</div>
-<div class="channel" >${dnote['channel']}</div>
-<div class="version" >${dnote['version']}</div>
-<div class="platform" >${dnote['platform']}</div>
-<div class="author">${dnote['author']}</div>
-<div class="note">${dnote['note']}</div>
-<div class="dest_url">${dnote['dest_url']}</div>
+<td class="delete"><input type="checkbox" value="${note.id}"></td>
+<td class="priority">${dnote['priority']}</td>
+<td class="id"><a href="/redirect/${vers}/${dnote['id']}">${rtitle}</a></td>
+<td class="created">${strftime(time_format, gmtime(dnote['created']))}</td>
+<td class="start_time" >${dnote['start_time']}</td>
+<td class="end_time" >${dnote['end_time']}</td>
+<td class="idle_time" >${dnote['idle_time']} days</td>
+<td class="lang" >${dnote['lang']}</td>
+<td class="locale" >${dnote['locale']}</td>
+<td class="product" >${dnote['product']}</td>
+<td class="channel" >${dnote['channel']}</td>
+<td class="version" >${dnote['version']}</td>
+<td class="platform" >${dnote['platform']}</td>
+<td class="author">${dnote['author']}</td>
+<td class="dest_url">${dnote['dest_url']}</td>
 </div>
+<tr class="row metrics">
+    <td></td>
+<td colspan="4">
+<a href="${dnote['dest_url']}" class="announce">
+        <span class="title">${anote.get('title', '')}</span>
+        <span class="body">${anote.get('body', '')}</span>
+    </a>
+<td>
+<td class="metrics" colspan="3">
+    <div class="label">Served:</span><b>${dnote.get('served', 0)}</b>
+    <div class="label">Clicked:</span><b>${dnote.get('clicks',0)}</b>
+</td>
+</tr>
 %endfor
-</div>
+</table>
 <footer>
 
 </footer>

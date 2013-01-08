@@ -66,7 +66,7 @@ class StorageBase(object):
                 'locale': data.get('locale'),
                 'note': json.dumps({
                     'title': data.get('title'),
-                    'text': data.get('note')
+                    'body': data.get('body')
                 }),
                 'dest_url': data.get('dest_url'),
                 'start_time': max(now, data.get('start_time', now)),
@@ -74,7 +74,7 @@ class StorageBase(object):
                 'author': data.get('author'),
                 'created': data.get('created', now),
                 'specific': data.get('specific'),
-                'title': data.get('title'),
+                'title': data.get('ctitle'),
                 }
         if snip.get('id') is None:
             snip['id'] = self._gen_key(snip)

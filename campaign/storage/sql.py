@@ -112,7 +112,7 @@ class Storage(StorageBase):
             for item in data:
                 self.put_announce(item, session)
             return self
-        if data.get('note') is None:
+        if data.get('body') is None:
             raise StorageException('Incomplete record. Skipping.')
         specificity = 0
         for col in ['lang', 'loc', 'platform',
@@ -205,7 +205,10 @@ class Storage(StorageBase):
 
     def get_all_announce(self, limit=None):
         result = []
-        sql = 'select * from %s order by created desc ' % self.__tablename__
+        sql = ("select campaigns.*, "
+               "scrapes.clicks, scrapes.served, scrapes.last from campaigns "
+               "left join scrapes on campaigns.id = scrapes.id "
+               "order by created desc ")
         if limit:
             sql += 'limit %d' % limit
         items = self.engine.execute(text(sql))

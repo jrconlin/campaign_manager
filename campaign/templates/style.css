@@ -117,7 +117,7 @@ transition: all 0.25s linear 0s;
 }
 #browserid {margin: 1em;}
 .priority {display:none !important;}
-.warning div {background-color: yellow;}
+.warning {background-color: yellow !important;}
 .hidden {display:none !important;}
 .error {border: 1px solid red;}
 #new_item .error {background-color: red; }

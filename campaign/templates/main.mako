@@ -62,8 +62,8 @@
 <legend>When to show?</legend>
 <span class="priority"><label for="priority">Priority(0=lowest):</label><input type="number" name="priority" value="0" /></span>
 <label for="start_time">Start time:</label><input type="datetime-local" name="start_time" value="" placeholder="${nowstr}"/>
-<label for="end_time">End time:</label><input type="datetime-local" name="end_time" value="${campaign_end_str}" placeholder="${campaign_end_str}" />
 <label for="idle_time">Idle time(days):</label><input type="number" name="idle_time" value="0" />
+<label for="end_time">Projected End time:</label><input type="datetime-local" name="end_time" value="${campaign_end_str}" placeholder="${campaign_end_str}" readonly />
 </fieldset>
 <fieldset class="note">
 <legend>What should they see?</legend>
@@ -524,8 +524,7 @@
 <button class="button" id="delete" name="delete">Delete Selected</button>
 </div>
 <table id="data">
-<tr>
-<th class="head row">
+<tr class="head row">
 <th class="delete">Delete?</th>
 <th class="id">ID</th>
 <th class="priority">Priority</th>
@@ -590,7 +589,7 @@
 <td class="id"><a href="/redirect/${vers}/${dnote['id']}">${rtitle}</a></td>
 <td class="created">${strftime(time_format, gmtime(dnote['created']))}</td>
 <td class="start_time" >${dnote['start_time']}</td>
-<td class="end_time" >${dnote['end_time']}</td>
+<!--td class="end_time" >${dnote['end_time']}</td -->
 <td class="idle_time" >${dnote['idle_time']} days</td>
 <td class="lang" >${dnote['lang']}</td>
 <td class="locale" >${dnote['locale']}</td>
@@ -639,17 +638,19 @@
             });
 $("#new_item input").change(function() {
         var dv;
+        var sday = 86400000; /* seconds in day */
         var conflict = false;
         var errors = [];
-        var cstart = Math.floor(Date.now()/1000);
+        // round to start of day.
+        var cstart = Math.floor(Date.now()/sday) * sday;
         var form = document.getElementById('new_item');
         dv = form.start_time.value;
         if (dv) {
             try {
-                cstart = Math.floor(Date.parse(dv)/1000);
+                cstart = Date.parse(dv);
             } catch (e) {}
         }
-        var cend = 9999999999;
+/*        var cend = 9999999999;
         dv = form.end_time.value;
         if (dv) {
             try {
@@ -664,15 +665,19 @@ $("#new_item input").change(function() {
         } else {
             form.end_time.classList.remove('error');
         }
-
+ */
+        form.start_time.value = new Date(cstart).toUTCString();
+        var cend = ((parseInt(form.idle_time.value)|1) * sday) + cstart;
+        console.debug(new Date(cend));
+        form.end_time.value = (new Date(cend)).toUTCString();
         var rows=document.getElementById('data').getElementsByClassName('record');
         for (var rl = 0; rl < rows.length; rl++){
             var row = rows[rl];
             if (row == undefined) continue;
             var id = row.id;
             var jqi = $('#'+id);
-            var start = parseInt(row.dataset.start_time);
-            var end = parseInt(row.dataset.end_time);
+            var start = parseInt(row.dataset.start_time) * 1000;
+            var end = parseInt(row.dataset.end_time) * 1000;
             var idle = parseInt(row.dataset.idle_time) || 0;
             var lang = (row.dataset.lang || form.lang.value || "").toLowerCase();
             var locale = (row.dataset.locale || form.locale.value || "").toLowerCase();

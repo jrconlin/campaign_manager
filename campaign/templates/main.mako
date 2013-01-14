@@ -687,8 +687,8 @@ $("#new_item input").change(function() {
             var version = row.dataset.version || form.version.value || "all";
             row.classList.remove('warning');
             console.debug(id, cend, end);
-            if (cend < end &&
-                idle >= (form.idle_time.value || "0") &&
+            if (cend <= end &&
+                idle >= parseInt(form.idle_time.value || "0") &&
                 lang == (form.lang.value || "").toLowerCase() &&
                 locale == (form.locale.value || "").toLowerCase() &&
                 platform == (form.platform.value || "").toLowerCase() &&

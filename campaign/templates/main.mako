@@ -605,7 +605,7 @@
 <td colspan="4">
 <a href="${dnote['dest_url']}" class="announce">
         <span class="title">${anote.get('title', '')}</span>
-        <span class="body">${anote.get('body', '')}</span>
+        <span class="body">${anote.get('text', '')}</span>
     </a>
 <td>
     <td class="metrics" colspan="3">

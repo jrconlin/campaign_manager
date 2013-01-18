@@ -294,7 +294,7 @@ def login_page(request, error=None):
         # use 'invalid@nowhere' to break persona looping on logout.
         response = Response(str(template.render(
             user=session.get('uid', 'invalid@nowhere'),
-            audience=request.get('HTTP_HOST'))),
+            audience=request.environ.get('HTTP_HOST'))),
             status=403)
         if (session.get('uid')):
             del(session['uid'])

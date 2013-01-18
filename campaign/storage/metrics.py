@@ -116,9 +116,9 @@ class Counter(StorageBase):
     def report(self, id):
         with self.engine.begin() as conn:
             resp = conn.execute(text(("select * from %s " %
-                                      self.__tablename_) +
+                                      self.__tablename__) +
                                      "where id = :id"), {'id': id})
-            if resp.rowcount != 0:
+            if resp.rowcount > 0:
                 result = resp.fetchone()
                 return dict(zip(resp.keys(), result))
             else:

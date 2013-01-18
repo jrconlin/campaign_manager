@@ -549,11 +549,11 @@
     dnote = dict(note);
 
     if dnote.get('start_time'):
-        dnote['start_time'] = strftime(time_format, gmtime(note.start_time))
+        dnote['start_time'] = strftime(time_format, gmtime(note.get('start_time')))
     else:
         dnote['start_time'] = '<i>Now</i>'
     if dnote.get('end_time'):
-        dnote['end_time'] = strftime(time_format, gmtime(note.end_time))
+        dnote['end_time'] = strftime(time_format, gmtime(note.get('end_time')))
     else:
         dnote['end_time'] = '<i>Forever</i>'
     if not dnote.get('idle_time'):
@@ -570,21 +570,21 @@
         dnote['version'] = '<i>All versions</i>'
     anote = json.loads(dnote.get('note','{}'))
     rtitle = dnote.get('title','')
-    if not len(rtitle):
+    if not len(rtitle or ''):
         rtitle = dnote.get('id')
 
 %>
 <tr class="record row" id="${dnote['id']}"
-    data-start_time="${int(note.start_time or 0)}"
-    data-end_time="${int(note.end_time or 9999999999)}"
-    data-idle_time="${note['idle_time'] or 0}"
-    data-lang="${note['lang'] or ""}"
-    data-locale="${note['locale'] or ""}"
-    data-product="${note['product'] or ""}"
-    data-platform="${note['platform'] or ""}"
-    data-channel="${note['channel'] or ""}"
-    data-version="${note['version'] or ""}">
-<td class="delete"><input type="checkbox" value="${note.id}"></td>
+    data-start_time="${int(note.get('start_time') or 0)}"
+    data-end_time="${int(note.get('end_time') or 9999999999)}"
+    data-idle_time="${note.get('idle_time') or 0}"
+    data-lang="${note.get('lang', "")}"
+    data-locale="${note.get('locale', "")}"
+    data-product="${note.get('product', "")}"
+    data-platform="${note.get('platform', "")}"
+    data-channel="${note.get('channel', "")}"
+    data-version="${note.get('version', "")}">
+<td class="delete"><input type="checkbox" value="${note.get('id')}"></td>
 <td class="priority">${dnote['priority']}</td>
 <td class="id"><a href="/redirect/${vers}/${dnote['id']}">${rtitle}</a></td>
 <td class="created">${strftime(time_format, gmtime(dnote['created']))}</td>
@@ -608,7 +608,7 @@
         <span class="body">${anote.get('body', '')}</span>
     </a>
 <td>
-<td class="metrics" colspan="3">
+    <td class="metrics" colspan="3">
     <div class="label">Served:</span><b>${dnote.get('served', 0)}</b>
     <div class="label">Clicked:</span><b>${dnote.get('clicks',0)}</b>
 </td>
@@ -638,7 +638,7 @@
             });
 $("#new_item input").change(function() {
         var dv;
-        var sday = 86400000; /* seconds in day */
+        var sday = 86400000; /* milliseconds in day */
         var conflict = false;
         var errors = [];
         // round to start of day.

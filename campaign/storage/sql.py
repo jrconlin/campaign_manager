@@ -1,6 +1,7 @@
 import json
 import time
 from . import StorageBase, StorageException
+from .metrics import Counter
 from sqlalchemy import (Column, Integer, String, Text,
                         create_engine, MetaData, text)
 from sqlalchemy.ext.declarative import declarative_base
@@ -42,6 +43,7 @@ class Storage(StorageBase):
             super(Storage, self).__init__(config, **kw)
             self.metadata = MetaData()
             self._connect()
+            self.counter = Counter(config, **kw)
             #TODO: add the most common index.
         except Exception, e:
             logger.log(msg='Could not initialize Storage "%s"' % str(e),
@@ -110,7 +112,7 @@ class Storage(StorageBase):
             session = self.Session()
         if isinstance(data, list):
             for item in data:
-                self.put_announce(item, session)
+                self.put_announce(item, session, now)
             return self
         if data.get('body') is None:
             raise StorageException('Incomplete record. Skipping.')
@@ -147,23 +149,22 @@ class Storage(StorageBase):
             now = int(time.time() / window) * window
         sql = ("select created, id, note, priority, `specific`, "
                "start_time, idle_time from %s where " % self.__tablename__ +
-               " coalesce((cast(start_time / %s as unsigned) * %s), %s) < %s "
-               % (window, window, now - 1, now) +
-               "and coalesce((cast(end_time / %s as unsigned) * %s), %s) > %s "
-               % (window, window, now + 1, now))
-        for field in ['product', 'platform', 'channel', 'lang',
-                      'locale']:
+               " coalesce(cast(start_time as unsigned), %s) <= %s"
+                % (now - 1, now))
+               #" and coalesce((cast(end_time / %s as unsigned) * %s), %s) > %s"
+               #% (window, window, now + 1, now))
+        for field in ['product', 'platform', 'channel', 'lang', 'locale']:
             if data.get(field):
-                sql += "and coalesce(%s, :%s) = :%s " % (field, field, field)
+                sql += " and coalesce(%s, :%s) = :%s " % (field, field, field)
                 params[field] = data.get(field)
         data['idle_time'] = data.get('idle', 0)
         try:
             if 'version' in data:
-                sql +="and coalesce(version, :version) =  :version "
-                params['version'] = data['version'].split('.')[0]
+                sql +=" and coalesce(version, :version) =  :version"
+                params['version'] = str(data['version']).split('.')[0]
         except Exception:
             pass
-        sql += "and coalesce(idle_time, 0) <= :idle_time "
+        sql += " and coalesce(idle_time, 0) <= :idle_time "
         params['idle_time'] = data.get('idle_time')
         sql += " order by priority desc, `specific` desc, start_time desc"
         if (self.settings.get('dbg.show_query', False)):
@@ -205,15 +206,15 @@ class Storage(StorageBase):
 
     def get_all_announce(self, limit=None):
         result = []
-        sql = ("select campaigns.*, "
-               "scrapes.clicks, scrapes.served, scrapes.last from campaigns "
-               "left join scrapes on campaigns.id = scrapes.id "
-               "order by created desc ")
+        sql = "select campaigns.* from campaigns order by created desc "
         if limit:
             sql += 'limit %d' % limit
         items = self.engine.execute(text(sql))
         for item in items:
-            result.append(item)
+            counter = self.counter.report(item.id)
+            ann = dict(item)
+            ann.update(counter)
+            result.append(ann)
         return result
 
     def del_announce(self, keys):

@@ -56,6 +56,8 @@ class StorageBase(object):
                          'locale'):
             if (data.get(nullable) in ('all', '', '0')):
                 del data[nullable]
+        start_time = int(max(now, data.get('start_time', now)))
+        end_time = start_time + (86400 * int(data.get('idle_time', 1)))
         snip = {'id': data.get('id'),
                 'channel': data.get('channel'),
                 'version': data.get('version'),
@@ -69,8 +71,8 @@ class StorageBase(object):
                     'body': data.get('body')
                 }),
                 'dest_url': data.get('dest_url'),
-                'start_time': max(now, data.get('start_time', now)),
-                'end_time': data.get('end_time'),
+                'start_time': start_time,
+                'end_time': end_time,
                 'author': data.get('author'),
                 'created': data.get('created', now),
                 'specific': data.get('specific'),

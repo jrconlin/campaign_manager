@@ -31,14 +31,14 @@ def Request(params=None, post=None, matchdict=None, headers=None,
 
 class ViewTest(unittest2.TestCase):
 
-    now = 10
+    now = 10000
 
     base_record = {
         'start_time': int(now),
         'end_time': int(now + 3000),
         'lang': 'en',
         'locale': 'US',
-        'note': 'Body',
+        'body': 'Body',
         'title': 'Title',
         'dest_url': 'http://example.com'
     }
@@ -79,7 +79,7 @@ class ViewTest(unittest2.TestCase):
     def setUp(self):
         self.config = testing.setUp()
         tsettings = TConfig({'db.type': 'sqlite',
-                             'db.db': ':memory:',
+                             'db.db': '/tmp/test.db',
                              'logging.use_metlog': False})
         self.storage = Storage(config=tsettings)
         self.logger = Logging(tsettings, None)
@@ -113,7 +113,7 @@ class ViewTest(unittest2.TestCase):
                               params={'idle': '6'}))
         eq_(len(json.loads(response.body)['announcements']), 4)
         timestamp = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
-                                  time.gmtime(self.now))
+                                  time.gmtime(self.now + 1))
         self.assertRaises(http.HTTPNotModified,
                           views.get_announcements,
                           self.req(matchdict={'channel': 'a',
@@ -176,12 +176,12 @@ class ViewTest(unittest2.TestCase):
     def test_manage_announce(self):
         # test assertion post
         req = self.req(matchdict={'channel': 'c', 'title': 'Goat',
-                                  'note': 'Ready for sacrifice'},
+                                  'body': 'Ready for sacrifice'},
                        user_id='foo@mozilla.com')
         response = views.manage_announce(req)
         # test create
-        response = json.loads(views.get_announcements(self.req(
-            matchdict={'channel': 'c'})).body)
+        ann = views.get_announcements(self.req(matchdict={'channel': 'c'}))
+        response = json.loads(ann.body)
         goat = None
         for record in response['announcements']:
             if record['title'] == 'Goat':

@@ -68,7 +68,7 @@ class StorageBase(object):
                 'locale': data.get('locale'),
                 'note': json.dumps({
                     'title': data.get('title'),
-                    'body': data.get('body')
+                    'text': data.get('body')
                 }),
                 'dest_url': data.get('dest_url'),
                 'start_time': start_time,

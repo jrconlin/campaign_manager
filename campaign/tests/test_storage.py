@@ -35,6 +35,8 @@ class TestStorage(unittest2.TestCase):
         self.storage.put_announce(self.test_announce, now=self.now)
         items = self.storage.get_all_announce()
         self.failUnless(len(items) > 0)
+        self.failUnless('text' in items[0]['note'])
+        self.failUnless('title' in items[0]['note'])
         self.failUnless(self.test_announce['body'] in items[0]['note'])
         self.failUnless(self.test_announce['title'] in items[0]['note'])
         self.failUnless(self.test_announce['dest_url'] in items[0]['dest_url'])

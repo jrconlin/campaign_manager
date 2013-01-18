@@ -193,7 +193,7 @@ def admin_page(request, error=None):
     template = get_template('main')
     content_type = 'text/html'
     reply = template.render(**tdata)
-    response = Response(str(reply), content_type=content_type)
+    response = Response(reply, content_type=content_type)
     return response
 
 

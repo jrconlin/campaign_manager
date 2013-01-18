@@ -52,6 +52,9 @@ class ViewTest(unittest2.TestCase):
         {'channel': 'a', 'platform': 'b', 'version': 0, 'title': 'ab0'},
         {'channel': 'b', 'platform': 'a', 'version': 2, 'title': 'ba2',
             'dest_url': 'http://example.org'},
+        {'channel': 'e', 'platform': None, 'version': None,
+            'title': 'utf8',
+            'body':  "\u0192\u00a9\u02d9\u02da\u02da\u00ac\u2206\u02d9\u02da\u02d9\u00a9\u2206\u00a9\u0192\u00df \u0376\u0376\u0376\u0376\u0376\u0376\u0376\u0376\u0376\u0376\u0376\u0376\u0376\u0376"}
     ]
 
     def req(self, matchdict={}, user_id=None, headers=None, **kw):
@@ -139,7 +142,7 @@ class ViewTest(unittest2.TestCase):
         req = self.req(matchdict={}, user_id='foo@mozilla.com')
         req.accept_encoding = 'application/javascript'
         response = views.get_all_announcements(req)
-        eq_(len(response['announcements']), 6)
+        eq_(len(response['announcements']), 7)
 
     def test_get_lang_loc(self):
         response = views.get_lang_loc(self.req(

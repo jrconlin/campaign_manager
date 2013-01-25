@@ -156,11 +156,13 @@ def get_template(name):
 
 def get_file(name):
     try:
-        name = os.path.join(_TMPL, '%s' % name)
-        ff = open(name)
-        return ff.read()
+        name = os.path.abspath(os.path.join(_TMPL, name))
+        if name.startswith(_TMPL):
+            ff = open(name)
+            return ff.read()
     except IOError:
-        raise http.HTTPNotFound
+        pass
+    raise http.HTTPNotFound
 
 
 @get_all.get()

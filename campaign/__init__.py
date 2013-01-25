@@ -60,6 +60,7 @@ def main(global_config, **settings):
     config.include("cornice")
     config.include("pyramid_beaker")
     config.include("mozsvc")
+    config.add_static_view(name='static', path='campaign:static')
     config.scan("campaign.views")
     logger = Logging(config, global_config['__file__'])
     config.registry['storage'] = _resolve_name(

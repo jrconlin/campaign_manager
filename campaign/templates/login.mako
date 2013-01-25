@@ -13,7 +13,7 @@
 <html>
     <head>
         <title>Please log in</title>
-        <link rel="stylesheet" type="text/css" href="/style.css" />
+        <link rel="stylesheet" type="text/css" href="/static/style.css" />
         <meta charset="utf-8" />
   </head>
   <body data-user='${user}'>

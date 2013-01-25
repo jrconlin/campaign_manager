@@ -42,10 +42,6 @@ redir = Service(name='redir',
 health = Service(name='health',
                  path='/status/',
                  description='Health Check')
-
-fstatic = Service(name='fstatic',
-                  path='/{file}',
-                  description='hack')
 root = Service(name='root',
                path='/',
                description='Default path')
@@ -255,13 +251,6 @@ def del_announce(request):
     if len(deleteables):
         storage.del_announce(deleteables)
     raise http.HTTPOk
-
-
-@fstatic.get()
-def get_static(request):
-    response = Response(str(get_file(request.matchdict.get('file'))),
-                        content_type='text/css')
-    return response
 
 
 @root.get()

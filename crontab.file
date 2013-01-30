@@ -4,4 +4,4 @@ PATH=.:/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:
 #
 # Please modify the path to fit reality.
 @reboot (cd ~/campaign_manager/;./run;)
-0 30 * * * (cd ~/campaign_manager; bin/python log_scrape.py)
+30 0 * * * (cd ~/campaign_manager; bin/python log_scrape.py)

@@ -1,4 +1,6 @@
 from campaign.storage.metrics import Counter
+from datetime import date
+import time
 
 
 if __name__ == "__main__":
@@ -16,6 +18,8 @@ if __name__ == "__main__":
             filtered_settings[key[9:]] = settings[key]
     config = Configurator(root_factory=Root, settings=filtered_settings)
     counter = Counter(config)
-    for file in sys.argv[1:]:
+    yesterday = date.fromtimestamp(time.time() - 86400).isoformat()
+    files = sys.argv[1:] or ['campaign.log.' + yesterday]
+    for file in files:
         counter.parse(file)
 

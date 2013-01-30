@@ -42,13 +42,17 @@ class Storage(SqlStorage):
             key.append(val[:maxLen])
         return 'ca_' + '-'.join(key)
 
-    def get_announce(self, data):
+    def get_announce(self, data, now=None):
         mkey = self._memcache_key(data)
         record = self.memcache.get(mkey)
         if record is not None:
+            if record == 0:
+                return None
             return record
         else:
-            record = super(Storage, self).get_announce(data)
+            record = super(Storage, self).get_announce(data, now)
+            if record is None or len(record) == 0:
+                record = 0
             self.memcache.set(mkey, record, self.expry)
             return record
 

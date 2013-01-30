@@ -117,7 +117,8 @@ def get_announcements(request, now=None):
     last_accessed = get_last_accessed(request)
     args.update(last_accessed)
     try:
-        reply = {'announcements': storage.get_announce(args, now)}
+        announces = storage.get_announce(args, now) or []
+        reply = {'announcements': announces}
     except Exception, e:
         rlogger.log(type='log', severity=LOG.ERROR,
                     msg='EXCEPTION: %s' % str(e))

@@ -123,7 +123,6 @@ def get_announcements(request, now=None):
                     msg='EXCEPTION: %s' % str(e))
         raise http.HTTPServerError
 
-    args.update({'useragent': request.user_agent})
     rlogger.log(type='log', severity=LOG.NOTICE,
                 msg='fetch_query', fields=args)
     if not len(reply['announcements']):

@@ -116,14 +116,16 @@ def get_announcements(request, now=None):
     args.update(get_lang_loc(request))
     last_accessed = get_last_accessed(request)
     args.update(last_accessed)
+    args.update({'useragent': request.user_agent})
     try:
         reply = {'announcements': storage.get_announce(args, now)}
     except Exception, e:
         rlogger.log(type='log', severity=LOG.ERROR,
-                msg='EXCEPTION: %s' % str(e))
+                    msg='EXCEPTION: %s' % str(e))
         raise http.HTTPServerError
+
     rlogger.log(type='log', severity=LOG.NOTICE,
-               msg='fetch_query', fields=args)
+                msg='fetch_query', fields=args)
     if not len(reply['announcements']):
         if last_accessed.get('last_accessed'):
             raise http.HTTPNotModified

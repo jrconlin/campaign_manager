@@ -142,17 +142,14 @@ class Storage(StorageBase):
         # window. This is because the database won't cache a query if it
         # differs from a previous one. The timestamp will cause the query to
         # not be cached.
-        window = int(self.settings.get('db.query_window', 1))
-        if window == 0:
-            window = 1
+        #window = int(self.settings.get('db.query_window', 1))
+        window = 1
         if now is None:
             now = int(time.time() / window) * window
         sql = ("select created, id, note, priority, `specific`, "
                "start_time, idle_time from %s where " % self.__tablename__ +
                " coalesce(cast(start_time as unsigned), %s) <= %s"
-                % (now - 1, now))
-               #" and coalesce((cast(end_time / %s as unsigned) * %s), %s) > %s"
-               #% (window, window, now + 1, now))
+               % (now - 1, now))
         for field in ['product', 'platform', 'channel', 'lang', 'locale']:
             if data.get(field):
                 sql += " and coalesce(%s, :%s) = :%s " % (field, field, field)

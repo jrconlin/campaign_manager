@@ -12,7 +12,7 @@ class Storage(SqlStorage):
             self.memcache = MemcachedClient(
                 servers=self.settings.get('db.memcache_servers'),
                 key_prefix='cm_')
-            self.expry = int(self.settings.get('db.query_window'))
+            self.expry = int(self.settings.get('db.query_window', 300))
         except Exception, e:
             logging.error('Could not initialize Storage "%s"', str(e))
             raise e

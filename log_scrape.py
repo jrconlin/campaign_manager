@@ -19,7 +19,7 @@ if __name__ == "__main__":
     config = Configurator(root_factory=Root, settings=filtered_settings)
     counter = Counter(config)
     yesterday = date.fromtimestamp(time.time() - 86400).isoformat()
-    files = sys.argv[1:] or ['campaign.log.' + yesterday]
+    files = sys.argv[1:] or ['logs/campaign.log.' + yesterday]
     for file in files:
         counter.parse(file)
 

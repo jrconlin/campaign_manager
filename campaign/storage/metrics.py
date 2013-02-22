@@ -83,12 +83,7 @@ class Counter(StorageBase):
 
     def fetched(self, data, time):
         for item in data:
-            if not 'url' in item:
-                ##raise CounterException('Bad Data')
-                print "Bad Data: %s" % str(item)
-                return
-            id = item.get('url').split('/').pop()
-            self.increment(id, 'served', time)
+            self.increment(data.get('token'), 'served', time)
 
     def redir(self, data, time):
         self.increment(data.get('id'), 'clicks', time)

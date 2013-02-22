@@ -11,6 +11,7 @@ from campaign.logger import Logging
 
 logger = None
 
+
 def get_group(group_name, dictionary):
     if group_name is None:
         return dictionary

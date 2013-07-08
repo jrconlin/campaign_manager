@@ -15,10 +15,8 @@ WebOb==1.2.2
 WebTest==1.4.0
 argparse==1.2.1
 cef==0.3
-circus==0.5.2
 cornice==0.10
 coverage==3.5.2
-distribute==0.6.28
 docutils==0.9.1
 metlog-py==0.9.7
 -e git://github.com/mozilla-services/mozservices.git@f1310d1e9a07ea6ae7374deee5b1da4cbb8dea0a#egg=mozsvc-dev
@@ -43,6 +41,10 @@ waitress==0.8.1
 wsgiref==0.1.2
 zope.deprecation==4.0.0
 zope.interface==4.0.1
+
+# commented out (no longer required)
+# circus==0.5.2
+# distribute==0.6.28
 
 # useful for metlog
 #pyzmq

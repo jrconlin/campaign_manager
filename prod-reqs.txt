@@ -49,7 +49,7 @@ zope.deprecation==4.0.0
 zope.interface==4.0.1
 
 # other (needed?)
-#waitress==0.8.1
+waitress==0.8.1
 
 # commented out (no longer required)
 # circus==0.5.2

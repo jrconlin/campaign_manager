@@ -1,9 +1,13 @@
 Beaker==1.6.4
-Chameleon==2.9.2
-Jinja2==2.6
+
+# Templating
+#Chameleon==2.9.2
+#Jinja2==2.6
 Mako==0.7.2
+
 MarkupSafe==0.15
 MySQL-python==1.2.4b2
+
 Paste==1.7.5.1
 PasteDeploy==1.5.0
 PasteScript==1.7.5
@@ -24,12 +28,15 @@ logging
 mock==1.0.0
 nose==1.2.1
 paster==0.7
-pyramid==1.4a2
-pyramid-beaker==0.7
+
+pyramid==1.4.2
+pyramid-beaker==0.8
 python-dateutil==2.1
+
 repoze.lru==0.6
 repoze.who==2.0
 repoze.who.plugins.browserid==0.5.0
+
 requests==0.14.1
 simplejson==2.6.2
 six==1.2.0
@@ -37,10 +44,12 @@ translationstring==1.1
 umemcache==1.6
 unittest2==0.5.1
 venusian==1.0a7
-waitress==0.8.1
 wsgiref==0.1.2
 zope.deprecation==4.0.0
 zope.interface==4.0.1
+
+# other (needed?)
+#waitress==0.8.1
 
 # commented out (no longer required)
 # circus==0.5.2

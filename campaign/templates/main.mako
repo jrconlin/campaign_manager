@@ -44,7 +44,6 @@
 <!--a href="http://www.mozilla.org/" id="tabzilla">mozilla</a--!>
 <header>
 <h1>Campaign Admin Panel</h1>
-<div> ${current_rel} ${ver_adj}</div>
 <div class="control">
 <button class="button logout">Log out</button>
 <!-- yep, this should be a REST get and display call. -->

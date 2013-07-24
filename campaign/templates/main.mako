@@ -23,7 +23,7 @@
     nowstr = strftime(time_fmt, gmtime())
     nowsec = time()
 
-    ver_adj = (int(nowsec) - current_rel_date) / release_period
+    ver_adj = int(nowsec - current_rel_date) / release_period
     current_rel = current_rel + ver_adj
     start_rel = current_rel - start_adj
     max_rel = current_rel + 4
@@ -31,11 +31,6 @@
     campaign_end = int(nowsec / 86400) * 86400 + \
         int(pageargs.get('default.campaign_length', 14)) * 86400
     campaign_end_str = strftime(time_fmt, gmtime(campaign_end))
-
-    ver_adj = (int(nowsec) - current_rel_date) / release_period
-    current_rel = current_rel + ver_adj
-    start_rel = current_rel - start_adj
-    max_rel = current_rel + 4
 
 %>
 <html>
@@ -49,6 +44,7 @@
 <!--a href="http://www.mozilla.org/" id="tabzilla">mozilla</a--!>
 <header>
 <h1>Campaign Admin Panel</h1>
+<div> ${current_rel} ${ver_adj}</div>
 <div class="control">
 <button class="button logout">Log out</button>
 <!-- yep, this should be a REST get and display call. -->

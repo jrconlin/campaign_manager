@@ -2,12 +2,11 @@ import json
 import time
 from . import StorageBase, StorageException
 from .metrics import Counter
-from sqlalchemy import (Column, Integer, String, Text,
-                        create_engine, MetaData, text)
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import scoped_session, sessionmaker
 from campaign import logger, LOG
 from campaign.views import api_version
+from sqlalchemy import (Column, Integer, String, Text, create_engine, text)
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import scoped_session, sessionmaker
 
 Base = declarative_base()
 
@@ -15,6 +14,9 @@ Base = declarative_base()
 class Campaign(Base):
     __tablename__ = 'campaigns'
 
+    # Due to a miscommunication during design, the client was
+    # created requiring the 'id' to be a numeric. We use 'id' as
+    # a unique identifier string.
     id = Column('id', String(25), primary_key=True)
     priority = Column('priority', Integer, index=True)
     specific = Column('specific', Integer, index=True)
@@ -41,7 +43,6 @@ class Storage(StorageBase):
     def __init__(self, config, **kw):
         try:
             super(Storage, self).__init__(config, **kw)
-            self.metadata = MetaData()
             self._connect()
             self.counter = Counter(config, **kw)
             #TODO: add the most common index.
@@ -66,8 +67,9 @@ class Storage(StorageBase):
             self.engine = create_engine(dsn, pool_recycle=3600)
             Base.metadata.create_all(self.engine)
             self.Session = scoped_session(sessionmaker(bind=self.engine,
-                expire_on_commit=True))
-            #self.metadata.create_all(self.engine)
+                                                       expire_on_commit=True))
+            # Store off a link to the main table.
+            self.campaigns = Base.metadata.tables.get(Campaign.__tablename__)
         except Exception, e:
             logger.log(msg='Could not connect to db "%s"' % repr(e),
                        type='error', severity=LOG.EMERGENCY)
@@ -77,17 +79,25 @@ class Storage(StorageBase):
         try:
             healthy = True
             with self.engine.begin() as conn:
-                conn.execute(("insert into %s " % self.__tablename__) +
-                    "(id, product, channel, platform, start_time, end_time, " +
-                    "note, dest_url, author, created) " +
-                    "values ('test', 'test', 'test', 'test', 0, 0, 'test', " +
-                    "'test', 'test', 0)")
-                resp = conn.execute(("select id, note from %s where " %
-                                    self.__tablename__) + "id='test';")
-                if resp.rowcount == 0:
+                ins = self.campaigns.insert().values(
+                    id="test",
+                    product="test",
+                    channel="test",
+                    platform="test",
+                    start_time=0,
+                    end_time=0,
+                    note="test",
+                    dest_url="test",
+                    author="test",
+                    created=0)
+                conn.execute(ins)
+                sel = self.campaigns.select(self.campaigns.c.id == "test")
+                resp = conn.execute(sel)
+                rows = resp.fetchall()
+                if not len(rows):
                     healthy = False
-                conn.execute("delete from %s where id='test';" %
-                             self.__tablename__)
+                conn.execute(self.campaigns.delete(self.campaigns.c.id ==
+                                                   "test"))
         except Exception, e:
             import warnings
             warnings.warn(str(e))
@@ -97,10 +107,10 @@ class Storage(StorageBase):
     def resolve(self, token):
         if token is None:
             return None
-        sql = 'select * from campaigns where id = :id'
-        items = self.engine.execute(text(sql), {'id': token})
+        sel = self.campaigns.select(self.campaigns.c.id == token)
+        items = self.engine.execute(sel)
         row = items.fetchone()
-        if items.rowcount == 0 or row is None:
+        if row is None:
             return None
         result = dict(zip(items.keys(), row))
         return result
@@ -146,6 +156,7 @@ class Storage(StorageBase):
         window = 1
         if now is None:
             now = int(time.time() / window) * window
+        # Using raw sql here for performance reasons.
         sql = ("select created, id, note, priority, `specific`, "
                "start_time, idle_time from %s where " % self.__tablename__ +
                " coalesce(cast(start_time as unsigned), %s) <= %s"
@@ -192,6 +203,9 @@ class Storage(StorageBase):
                 # ID in this case is a unique integer per CM record
                 # it is used by the client to replace records.
                 'id': int(item.created * 100),
+                # token is stripped before being sent to the client.
+                # it's used for metrics tracking.
+                'token': item.id,
                 # This uses the server string ID for redirect/tracking
                 'url': self.settings.get('redir.url', 'http://%s/%s%s') % (
                         self.settings.get('redir.host', 'localhost'),

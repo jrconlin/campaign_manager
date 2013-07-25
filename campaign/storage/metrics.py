@@ -79,16 +79,12 @@ class Counter(StorageBase):
                     {'id': id,
                      'time': time})
             except Exception, e:
-                import pdb; pdb.set_trace();
+                logger.log(msg="Could not increment id: %s" % str(e),
+                           type="error", severity=LOG.ERROR)
 
     def fetched(self, data, time):
         for item in data:
-            if not 'url' in item:
-                ##raise CounterException('Bad Data')
-                print "Bad Data: %s" % str(item)
-                return
-            id = item.get('url').split('/').pop()
-            self.increment(id, 'served', time)
+            self.increment(data.get('token'), 'served', time)
 
     def redir(self, data, time):
         self.increment(data.get('id'), 'clicks', time)
@@ -110,7 +106,8 @@ class Counter(StorageBase):
                                                data,
                                                timestamp)
                 except Exception, e:
-                    import pdb; pdb.set_trace()
+                    logger.log(msg="Could not log %s" % str(e),
+                               type="error", severity=LOG.ERROR)
                     raise e
 
     def report(self, id):
@@ -130,7 +127,7 @@ class Counter(StorageBase):
             for line in file:
                 self.log(line)
         except Exception, e:
-            import pdb; pdb.set_trace()
-            print str(e)
+            logger.log(msg="Could not parse %s" % str(e),
+                       type="error", severity=LOG.ERROR)
             pass
 

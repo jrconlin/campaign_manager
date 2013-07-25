@@ -4,11 +4,11 @@
 """ Cornice services.
 """
 from campaign import logger, LOG
+from campaign.util import strToUTC
 from decorators import checkService, authorizedOnly
 from mako.template import Template
 from mozsvc.metrics import Service
 from webob import Response
-from campaign.util import strToUTC
 import json
 import os
 import pyramid.httpexceptions as http
@@ -100,6 +100,12 @@ def log_fetched(request, reply):
                 msg='fetched',
                 fields=json.dumps(reply['announcements']))
 
+def _filter_token(record):
+    try:
+        del record['token']
+    except KeyError:
+        pass
+    return record
 
 @fetch.get()
 @checkService
@@ -132,6 +138,8 @@ def get_announcements(request, now=None):
         else:
             raise http.HTTPNoContent
     log_fetched(request, reply)
+    # filter out the "token" records, used by logging only.
+    reply['announcements'] = map(_filter_token, reply['announcements'])
     response = Response(json.dumps(reply))
     timestamp = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
                               time.gmtime())

@@ -1,4 +1,4 @@
-from campaign import logger, LOG
+from campaign.logger import LOG
 from campaign.storage import StorageBase
 from datetime import datetime
 from sqlalchemy import (Column, Integer, String,
@@ -30,11 +30,12 @@ class Counter(StorageBase):
     __database__ = 'campaign'
     __tablename__ = 'scrapes'
 
-    def __init__(self, config, **kw):
+    def __init__(self, config, logger, **kw):
         try:
             super(Counter, self).__init__(config, **kw)
             self.metadata = MetaData()
             self._connect()
+            self.logger = logger
             #TODO: add the most common index.
         except Exception, e:
             logger.log(msg='Could not initialize Storage "%s"' % str(e),
@@ -59,34 +60,36 @@ class Counter(StorageBase):
             self.session = scoped_session(sessionmaker(bind=self.engine))()
             #self.metadata.create_all(self.engine)
         except Exception, e:
-            logger.log(msg='Could not connect to db "%s"' % repr(e),
-                       type='error', severity=LOG.EMERGENCY)
+            self.logger.log(msg='Could not connect to db "%s"' % repr(e),
+                            type='error', severity=LOG.EMERGENCY)
             raise e
+
+    def bulk_increment(self, conn, id, action, time=time.time()):
+        action = re.sub(r'[^0-9A-Za-z]', '', action)
+        try:
+            conn.execute(text("insert or ignore into " + self.__tablename__ +
+                              " (id)" +
+                              " values (:id ); "),
+                         {"id": id, "action": action, "last": time})
+            conn.execute(text("update " + self.__tablename__ +
+                              " set %s=%s + 1, last=:last where " %
+                              (action, action) +
+                              " id=:id ;"),
+                         {"id": id, "action": action, "last": time})
+        except Exception, e:
+            self.logger.log(msg="Could not increment id: %s" % str(e),
+                            type="error", severity=LOG.ERROR)
 
     def increment(self, id, action, time):
         with self.engine.begin() as conn:
-            action = re.sub(r'[^0-9A-Za-z]', '', action)
-            try:
-                conn.execute(text("insert into %s (id) values (:id)" %
-                                  self.__tablename__), {'id': id})
-            except exc.IntegrityError, e:
-                pass
-            try:
-                print "%s marked as %s" % (id, action)
-                conn.execute(text("update %s set %s=%s " % (
-                    self.__tablename__, action, action) +
-                    "+ 1, last=:time where id = :id and last <= :time"),
-                    {'id': id,
-                     'time': time})
-            except Exception, e:
-                logger.log(msg="Could not increment id: %s" % str(e),
-                           type="error", severity=LOG.ERROR)
+            self.bulk_increment(conn, id, action, time)
 
-    def fetched(self, data, time):
-        for item in data:
-            self.increment(data.get('token'), 'served', time)
+    def fetched(self, data, time=time.time()):
+        with self.engine.begin() as conn:
+            for item in data:
+                self.bulk_increment(conn, item.get('token'), 'served', time)
 
-    def redir(self, data, time):
+    def redir(self, data, time=time.time()):
         self.increment(data.get('id'), 'clicks', time)
 
     commands = {'redirect': redir,
@@ -106,7 +109,7 @@ class Counter(StorageBase):
                                                data,
                                                timestamp)
                 except Exception, e:
-                    logger.log(msg="Could not log %s" % str(e),
+                    self.logger.log(msg="Could not log %s" % str(e),
                                type="error", severity=LOG.ERROR)
                     raise e
 
@@ -127,7 +130,7 @@ class Counter(StorageBase):
             for line in file:
                 self.log(line)
         except Exception, e:
-            logger.log(msg="Could not parse %s" % str(e),
+            self.logger.log(msg="Could not parse %s" % str(e),
                        type="error", severity=LOG.ERROR)
             pass
 

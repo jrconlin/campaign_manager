@@ -1,5 +1,6 @@
 from campaign import views
 from campaign.storage.sql import Storage
+from campaign.storage.metrics import Counter
 from campaign.tests import TConfig
 from campaign.logger import Logging
 from nose.tools import eq_
@@ -73,6 +74,7 @@ class ViewTest(unittest2.TestCase):
         request.registry = Reg(settings=self.config.get_settings())
         request.registry['storage'] = self.storage
         request.registry['logger'] = self.logger
+        request.registry['counter'] = self.counter
         request.registry['auth'] = mock.Mock()
         request.registry['auth'].get_user_id.return_value = user_id
         if matchdict:
@@ -84,8 +86,9 @@ class ViewTest(unittest2.TestCase):
         tsettings = TConfig({'db.type': 'sqlite',
                              'db.db': '/tmp/test.db',
                              'logging.use_metlog': False})
-        self.storage = Storage(config=tsettings)
         self.logger = Logging(tsettings, None)
+        self.storage = Storage(config=tsettings, logger=self.logger)
+        self.counter = Counter(config=tsettings, logger=self.logger)
         records = []
         for diff in self.diffs:
             record = self.base_record.copy()

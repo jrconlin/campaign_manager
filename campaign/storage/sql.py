@@ -2,7 +2,7 @@ import json
 import time
 from . import StorageBase, StorageException
 from .metrics import Counter
-from campaign import logger, LOG
+from campaign.logger import LOG
 from campaign.views import api_version
 from sqlalchemy import (Column, Integer, String, Text, create_engine, text)
 from sqlalchemy.ext.declarative import declarative_base
@@ -40,11 +40,12 @@ class Storage(StorageBase):
     __database__ = 'campaign'
     __tablename__ = 'campaigns'
 
-    def __init__(self, config, **kw):
+    def __init__(self, config, logger, **kw):
         try:
             super(Storage, self).__init__(config, **kw)
             self._connect()
-            self.counter = Counter(config, **kw)
+            self.counter = Counter(config, logger, **kw)
+            self.logger = logger
             #TODO: add the most common index.
         except Exception, e:
             logger.log(msg='Could not initialize Storage "%s"' % str(e),
@@ -71,7 +72,7 @@ class Storage(StorageBase):
             # Store off a link to the main table.
             self.campaigns = Base.metadata.tables.get(Campaign.__tablename__)
         except Exception, e:
-            logger.log(msg='Could not connect to db "%s"' % repr(e),
+            self.logger.log(msg='Could not connect to db "%s"' % repr(e),
                        type='error', severity=LOG.EMERGENCY)
             raise e
 
@@ -184,7 +185,7 @@ class Storage(StorageBase):
         try:
             items = self.engine.execute(text(sql), **dict(params))
         except Exception, e:
-            logger.log(msg='SQL Error "%s" ' % str(e),
+            self.logger.log(msg='SQL Error "%s" ' % str(e),
                        type='error', severity=LOG.CRITICAL)
         result = []
         for item in items:
@@ -217,7 +218,9 @@ class Storage(StorageBase):
 
     def get_all_announce(self, limit=None):
         result = []
-        sql = "select campaigns.* from campaigns order by created desc "
+        sql = ("select c.*,s.served,s.clicks from " +
+               "(campaigns as c left join scrapes " +
+               "as s on c.id=s.id) order by created desc ")
         if limit:
             sql += 'limit %d' % limit
         items = self.engine.execute(text(sql))

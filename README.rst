@@ -120,3 +120,5 @@ where:
     Optional local information (e.g. 'en-US')
 
 Returns a 302 to the actual URL.
+
+Yay! You read it all. `Have a cookie! <http://jrconlin.com/cookies/>`_

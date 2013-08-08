@@ -3,7 +3,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 """ Cornice services.
 """
-from campaign import logger, LOG
+from campaign.logger import LOG
 from campaign.util import strToUTC
 from decorators import checkService, authorizedOnly
 from mako.template import Template
@@ -95,10 +95,13 @@ def get_last_accessed(request):
 
 def log_fetched(request, reply):
     rlogger = request.registry['logger']
+    counter = request.registry['counter']
+    counter.fetched(reply['announcements'])
     rlogger.log(type='log',
                 severity=LOG.NOTICE,
                 msg='fetched',
                 fields=json.dumps(reply['announcements']))
+
 
 def _filter_token(record):
     try:
@@ -106,6 +109,7 @@ def _filter_token(record):
     except KeyError:
         pass
     return record
+
 
 @fetch.get()
 @checkService
@@ -324,9 +328,11 @@ def login_page(request, error=None):
 def handle_redir(request):
     rlogger = request.registry.get('logger')
     storage = request.registry.get('storage')
+    counter = request.registry.get('counter')
     data = storage.resolve(request.matchdict.get('token'))
     if data is None:
         raise http.HTTPNotFound
+    counter.redir(data)
     rlogger.log(type='redirect', severity=LOG.INFORMATIONAL,
                 msg='redirect', fields=data)
     raise http.HTTPTemporaryRedirect(location=data['dest_url'])
@@ -334,4 +340,6 @@ def handle_redir(request):
 
 @health.get()
 def health_check(request):
-    raise http.HTTPOk
+    if request.registry.get('storage').health_check():
+        raise http.HTTPOk
+    raise http.HTTPServerError

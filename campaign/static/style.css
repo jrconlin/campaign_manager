@@ -122,10 +122,11 @@ transition: all 0.25s linear 0s;
 .error {border: 1px solid red;}
 #new_item .error {background-color: red; }
 .metrics {padding-bottom: 1em; }
-.metrics a.announce { width:340px;}
-.metrics .announce {font-family:'Droid Sans';
+.announce { width:340px;min-height: 3EM;}
+.announce {font-family:'Droid Sans';
     display:block; padding-left: 40px;}
-.metrics .announce {text-decoration:none; color:#FFF; background: #000; background:-moz-linear-gradient(left, #114244 0%, #114244 10%, #000000 10%, #000000 100%);}
-.metrics .announce span {display: block; }
-.metrics .announce .title {font-weight: bold;}
-.metrics .announce .body {background-color: #000 important;font-size: 80%; color: #DDD;}
+.announce {text-decoration:none; color:#FFF; background: #000; background:-moz-linear-gradient(left, #114244 0%, #114244 10%, #000000 10%, #000000 100%);}
+.announce span {display: block; }
+.announce .title {font-weight: bold;}
+.announce .body {background-color: #000 important;font-size: 80%; color: #DDD;}
+.note .announce {position: absolute; left: 25em;}

@@ -61,10 +61,14 @@
 <label for="end_time">Projected End time:</label><input type="datetime-local" name="end_time" value="${campaign_end_str}" placeholder="${campaign_end_str}" readonly />
 </fieldset>
 <fieldset class="note">
-<legend>What should they see?</legend>
-<label for="title">Title:</label><input type="text" name="title" placeholder="Free Puppies!"/>
-<label for="dest_url">Destination URL:</label><input type="text" name="dest_url" placeholder="http://example.org/"/>
-<label for="body">Body:</label><input type="text" name="body" placeholder="Who doesn't love free puppies?"/>
+    <legend>What should they see?</legend>
+    <div class="announce">
+        <span class="title"></span>
+        <span class="body"></body>
+    </div>
+<label for="title">Title:</label><input type="text" name="title" placeholder="Free Puppies!" class="counted"/> <span class="counter" data-for="title" data-max="25"></span>
+<label for="dest_url">Destination URL:</label><input type="text" name="dest_url" placeholder="http://example.org/" class="counted"/>
+<label for="body">Body:</label><input type="text" name="body" placeholder="Who doesn't love free puppies?" class="counted"/> <span class="counter" data-for="body" data-max="25"></span>
 </fieldset>
 <fieldset class="locale">
 <legend>Who should see?</legend>
@@ -604,8 +608,8 @@
     </a>
 <td>
     <td class="metrics" colspan="3">
-    <div class="label">Served:</span><b>${dnote.get('served', 0)}</b>
-    <div class="label">Clicked:</span><b>${dnote.get('clicks',0)}</b>
+    <div class="label">Approx. Served:</span> <b>${dnote.get('served', 0)}</b>
+    <div class="label">Approx. Touched:</span> <b>${dnote.get('clicks',0)}</b>
 </td>
 </tr>
 %endfor
@@ -714,6 +718,24 @@ $("#new_item input").change(function() {
         }
 
 });
+$(".counted").keyup(function(event) {
+        t = event.currentTarget;
+        c = $(".counter:[data-for='"+t.name+"']");
+        len = c.data('max') - t.value.trim().length;
+        if (len < 0){
+            if (! t.classList.contains("error")) {
+                t.classList.toggle("error")
+            }
+        } else {
+            if (t.classList.contains("error")) {
+                t.classList.toggle("error")
+            }
+        }
+        c.html(len);
+        $(".note .announce .title").html($("input[name='title']").val())
+        $(".note .announce .body").html($("input[name='body']").val())
+
+        })
 $("#bidjs").ready(function() {
         navigator.id.watch({loggedInUser: '${author}',
             onlogin: function() {console.debug('main-login')},

@@ -1,7 +1,7 @@
 from campaign.storage.sql import Storage
+from campaign.logger import Logging
 from campaign.tests import TConfig
 import json
-import time
 import unittest2
 
 
@@ -19,9 +19,13 @@ class TestStorage(unittest2.TestCase):
         'dest_url': 'http://example.com'
     }
 
+    config = TConfig({'db.type': 'sqlite',
+                      'db.db': '/tmp/test.db',
+                      'logging.use_metlog': False})
+    logger = Logging(config, None)
+
     def setUp(self):
-        self.storage = Storage(config=TConfig({'db.type': 'sqlite',
-            'db.db': '/tmp/test.db'}))
+        self.storage = Storage(config=self.config, logger=self.logger)
 
     def tearDown(self):
         self.storage.purge()
@@ -47,15 +51,15 @@ class TestStorage(unittest2.TestCase):
     def reload(self):
         records = []
         updates = [{'lang': None, 'locale': None, 'title': 'Everyone'},
-            {'platform': 'a', 'channel': 'a', 'title': 'p:a;c:a'},
-            {'platform': 'b', 'channel': 'a', 'title': 'p:b;c:a'},
-            {'platform': 'a', 'start_time': self.now + 20,
-                'end_time': self.now + 3000, 'title': 'notyet'},
-            #{'platform': 'a', 'end_time': self.now - 50, 'title': 'tooold'},
-            {'platform': 'a', 'idle_time': 10, 'title': 'idle: 10'},
-            {'platform': 'a', 'channel': 'b', 'lang': 'a', 'locale': 'a',
-                'idle_time': 10, 'title': 'full_rec'}
-        ]
+                   {'platform': 'a', 'channel': 'a', 'title': 'p:a;c:a'},
+                   {'platform': 'b', 'channel': 'a', 'title': 'p:b;c:a'},
+                   {'platform': 'a', 'start_time': self.now + 20,
+                    'end_time': self.now + 3000, 'title': 'notyet'},
+                   #{'platform': 'a', 'end_time': self.now - 50,
+                   # 'title': 'tooold'},
+                   {'platform': 'a', 'idle_time': 10, 'title': 'idle: 10'},
+                   {'platform': 'a', 'channel': 'b', 'lang': 'a',
+                    'locale': 'a', 'idle_time': 10, 'title': 'full_rec'}]
         # load the database
         for update in updates:
             test = self.test_announce.copy()

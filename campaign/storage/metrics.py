@@ -67,22 +67,17 @@ class Counter(StorageBase):
     def bulk_increment(self, conn, id, action, time=time.time()):
         action = re.sub(r'[^0-9A-Za-z]', '', action)
         try:
-            if (self.config.get("db.type") == "sqlite"):
+            if (self.settings.get("db.type") == "sqlite"):
                 conn.execute(text("insert or ignore into " +
                                   self.__tablename__ +
                                   " (id)" +
                                   " values (:id ); "),
                              {"id": id})
             else:
-                conn.execute(text("insert into " + self.__tablename__ +
-                                  " (id) values (:id) " +
-                                  " on duplicate key update;"),
-                             {"id": id})
-            conn.execute(text("update " + self.__tablename__ +
-                              " set %s=%s + 1, last=:last where " %
-                              (action, action) +
-                              " id=:id ;"),
-                         {"id": id, "action": action, "last": time})
+                dml = text("insert into " + self.__tablename__ 
+                         + " (id, %s) values (:id, 1) " % action
+                         + " on duplicate key update %s=%s+1, last=:last;" % (action, action))
+                conn.execute(dml, {"id": id, "last":time})
         except Exception, e:
             self.logger.log(msg="Could not increment id: %s" % str(e),
                             type="error", severity=LOG.ERROR)

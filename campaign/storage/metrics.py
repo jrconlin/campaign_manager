@@ -2,7 +2,7 @@ from campaign.logger import LOG
 from campaign.storage import StorageBase
 from datetime import datetime
 from sqlalchemy import (Column, Integer, String,
-                        create_engine, MetaData, text, exc)
+                        create_engine, MetaData, text)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import scoped_session, sessionmaker
 import json
@@ -33,9 +33,9 @@ class Counter(StorageBase):
     def __init__(self, config, logger, **kw):
         try:
             super(Counter, self).__init__(config, **kw)
+            self.logger = logger
             self.metadata = MetaData()
             self._connect()
-            self.logger = logger
             #TODO: add the most common index.
         except Exception, e:
             logger.log(msg='Could not initialize Storage "%s"' % str(e),
@@ -67,22 +67,18 @@ class Counter(StorageBase):
     def bulk_increment(self, conn, id, action, time=time.time()):
         action = re.sub(r'[^0-9A-Za-z]', '', action)
         try:
-            if (self.config.get("db.type") == "sqlite"):
+            if (self.settings.get("db.type") == "sqlite"):
                 conn.execute(text("insert or ignore into " +
                                   self.__tablename__ +
                                   " (id)" +
                                   " values (:id ); "),
                              {"id": id})
             else:
-                conn.execute(text("insert into " + self.__tablename__ +
-                                  " (id) values (:id) " +
-                                  " on duplicate key update;"),
-                             {"id": id})
-            conn.execute(text("update " + self.__tablename__ +
-                              " set %s=%s + 1, last=:last where " %
-                              (action, action) +
-                              " id=:id ;"),
-                         {"id": id, "action": action, "last": time})
+                dml = text("insert into " + self.__tablename__
+                           + " (id, %s) values (:id, 1) " % action
+                           + " on duplicate key update %s=%s+1, last=:last;"
+                           % (action, action))
+                conn.execute(dml, {"id": id, "last": time})
         except Exception, e:
             self.logger.log(msg="Could not increment id: %s" % str(e),
                             type="error", severity=LOG.ERROR)
@@ -117,7 +113,7 @@ class Counter(StorageBase):
                                                timestamp)
                 except Exception, e:
                     self.logger.log(msg="Could not log %s" % str(e),
-                               type="error", severity=LOG.ERROR)
+                                    type="error", severity=LOG.ERROR)
                     raise e
 
     def report(self, id):
@@ -138,6 +134,6 @@ class Counter(StorageBase):
                 self.log(line)
         except Exception, e:
             self.logger.log(msg="Could not parse %s" % str(e),
-                       type="error", severity=LOG.ERROR)
+                            type="error", severity=LOG.ERROR)
             pass
 

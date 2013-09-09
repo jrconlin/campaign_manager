@@ -1,7 +1,7 @@
 ************************************
 
-This archive should no longer be used as authoritative. Please use 
- https://github.com/mozilla-services/campaign_manager              
+This archive should no longer be used as authoritative. Please use
+ https://github.com/mozilla-services/campaign_manager
 
 ************************************
 

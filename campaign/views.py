@@ -342,4 +342,4 @@ def handle_redir(request):
 def health_check(request):
     if request.registry.get('storage').health_check():
         raise http.HTTPOk
-    raise http.HTTPServerError
+    raise http.HTTPServiceUnavailable

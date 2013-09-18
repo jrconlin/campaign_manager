@@ -21,7 +21,7 @@ class TestStorage(unittest2.TestCase):
 
     config = TConfig({'db.type': 'sqlite',
                       'db.db': '/tmp/test.db',
-                      'logging.use_metlog': False})
+                      'logging.use_heka': False})
     logger = Logging(config, None)
 
     def setUp(self):

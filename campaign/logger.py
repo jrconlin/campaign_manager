@@ -1,5 +1,6 @@
 import logging
 import json
+from __builtin__ import type as btype
 
 
 class LOG:
@@ -13,18 +14,11 @@ class LOG:
     DEBUG = 7
 
 
-METLOG = False
+HEKA = False
 BOTO = False
 try:
-    from metlog.config import client_from_stream_config
-    METLOG = True
-except ImportError:
-    pass
-try:
-    import boto
-    import uuid
-    from time import time
-    BOTO = True
+    from heka.config import client_from_stream_config
+    HEKA = True
 except ImportError:
     pass
 
@@ -38,43 +32,40 @@ class Logging(object):
                   logging.ERROR, logging.WARNING, logging.INFO,
                   logging.INFO, logging.DEBUG]
 
-    metlog = None
+    heka = None
     boto = None
+    loggername = 'campaign-manager'
 
     def __init__(self, config, settings_file):
-        global METLOG, BOTO
+        global HEKA, BOTO
         settings = config.get_settings()
-        self.logger = logging.getLogger(
-            settings.get('logging.name', 'campaign-manager'))
+        self.loggername = settings.get('logging.name', 'campaign-manager')
+        self.logger = logging.getLogger(self.loggername)
         self.logger.level = 1
-        if METLOG and settings.get('logging.use_metlog', True):
-            self.metlog = client_from_stream_config(
+        if HEKA and settings.get('logging.use_heka', True):
+            self.heka = client_from_stream_config(
                 open(settings_file, 'r'),
-                'metlog')
+                'heka')
         else:
-            METLOG = False
-        if BOTO:
-            try:
-                self.boto = boto.connect_sdb(settings.get('aws.key'),
-                                             settings.get('aws.secret')).\
-                    lookup(settings.get('aws.domain'))
-            except Exception, e:
-                import pdb; pdb.set_trace()
-                BOTO = False
+            HEKA = False
 
     def log(self, msg=None, type='event', severity=7,
             fields=None):
-        self.logger.log(self.metlog2log[severity],
-                        "%s : %s", msg, json.dumps(fields))
-        if self.metlog:
-            self.metlog.metlog(type, severity, payload=msg, fields=fields)
-        if self.boto:
-            rec = self.boto.new_item(uuid.uuid1())
-            rec['type'] = type
-            rec['severity'] = severity
-            rec['payload'] = msg
-            rec['fields'] = json.dumps(fields)
-            rec['created'] = time()
-            rec.save()
-
-
+        self.logger.log(severity,
+                        "%s [%d] %s : %s", self.loggername,
+                        severity, msg, json.dumps(fields))
+        if self.heka:
+            if fields is not None:
+                if btype(fields) is not dict:
+                    fields = {"value": fields}
+            else:
+                fields = {}
+            # remove null value keys.
+            for k in fields.keys():
+                if fields[k] is None:
+                    del(fields[k])
+            self.heka.heka(type=type,
+                           logger=self.loggername,
+                           severity=severity,
+                           payload=msg,
+                           fields=fields)

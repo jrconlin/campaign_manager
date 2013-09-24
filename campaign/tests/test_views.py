@@ -85,7 +85,7 @@ class ViewTest(unittest2.TestCase):
         self.config = testing.setUp()
         tsettings = TConfig({'db.type': 'sqlite',
                              'db.db': '/tmp/test.db',
-                             'logging.use_metlog': False})
+                             'logging.use_heka': False})
         self.logger = Logging(tsettings, None)
         self.storage = Storage(config=tsettings, logger=self.logger)
         self.counter = Counter(config=tsettings, logger=self.logger)

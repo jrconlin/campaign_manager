@@ -24,6 +24,7 @@ coverage==3.5.2
 docutils==0.9.1
 metlog-py==0.9.7
 -e git+https://github.com/mozilla-services/mozservices.git@f1310d1e9a07ea6ae7374deee5b1da4cbb8dea0a#egg=mozsvc-dev
+-e git+https://github.com/mozilla-services/heka-py.git@85972f7811449fb6cf759f04a17759deefed6cd5#egg=heka_py-dev
 logging
 mock==1.0.0
 nose==1.2.1

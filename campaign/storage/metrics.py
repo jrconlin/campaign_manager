@@ -61,7 +61,7 @@ class Counter(StorageBase):
             #self.metadata.create_all(self.engine)
         except Exception, e:
             self.logger.log(msg='Could not connect to db "%s"' % repr(e),
-                            type='error', severity=LOG.EMERGENCY)
+                            etype='error', severity=LOG.EMERGENCY)
             raise e
 
     def bulk_increment(self, conn, id, action, time=time.time()):

@@ -73,7 +73,7 @@ def get_last_accessed(request):
             if request.registry['logger']:
                 ims_str = time.strftime('%a, %d %b %Y %H:%M:%S GMT',
                                         time.gmtime(last_accessed))
-                request.registry['logger'].log(etype='campaign',
+                request.registry['logger'].log(type='campaign',
                                                severity=LOG.DEBUG,
                                                msg='I-M-S: %s (%s)' %
                                                    (ims_str,
@@ -87,7 +87,7 @@ def get_last_accessed(request):
         if settings.get('dbg.break_unknown_exception', False):
             import pdb
             pdb.set_trace()
-        request.registry['logger'].log(etype='error',
+        request.registry['logger'].log(type='error',
                                        severity=LOG.ERROR,
                                        msg='Exception: %s' % str(e))
     return {'last_accessed': last_accessed}
@@ -97,7 +97,7 @@ def log_fetched(request, reply):
     rlogger = request.registry['logger']
     counter = request.registry['counter']
     counter.fetched(reply['announcements'])
-    rlogger.log(etype='log',
+    rlogger.log(type='log',
                 severity=LOG.NOTICE,
                 msg='fetched',
                 fields=json.dumps(reply['announcements']))
@@ -130,11 +130,11 @@ def get_announcements(request, now=None):
         announces = storage.get_announce(args, now) or []
         reply = {'announcements': announces}
     except Exception, e:
-        rlogger.log(etype='log', severity=LOG.ERROR,
+        rlogger.log(type='log', severity=LOG.ERROR,
                     msg='EXCEPTION: %s' % str(e))
         raise http.HTTPServerError
 
-    rlogger.log(etype='log', severity=LOG.NOTICE,
+    rlogger.log(type='log', severity=LOG.NOTICE,
                 msg='fetch_query', fields=args)
     if not len(reply['announcements']):
         if last_accessed.get('last_accessed'):
@@ -317,7 +317,7 @@ def login_page(request, error=None):
         if settings.get('dbg.break_unknown_exception', False):
             import pdb
             pdb.set_trace()
-        request.registry['logger'].log(str(e), etype='error',
+        request.registry['logger'].log(str(e), type='error',
                                        severity=LOG.ERROR)
         raise http.HTTPServerError
 
@@ -333,7 +333,7 @@ def handle_redir(request):
     if data is None:
         raise http.HTTPNotFound
     counter.redir(data)
-    rlogger.log(etype='redirect', severity=LOG.INFORMATIONAL,
+    rlogger.log(type='redirect', severity=LOG.INFORMATIONAL,
                 msg='redirect', fields=data)
     raise http.HTTPTemporaryRedirect(location=data['dest_url'])
 

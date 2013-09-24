@@ -1,5 +1,6 @@
 import logging
 import json
+from __builtin__ import type as btype
 
 
 class LOG:
@@ -48,19 +49,19 @@ class Logging(object):
         else:
             HEKA = False
 
-    def log(self, msg=None, etype='event', severity=7,
+    def log(self, msg=None, type='event', severity=7,
             fields=None):
         self.logger.log(severity,
                         "%s [%d] %s : %s", self.loggername,
                         severity, msg, json.dumps(fields))
         if self.heka:
             if (fields is not None and
-                    type(fields) is not dict):
+                    btype(fields) is not dict):
                 if len(fields) == 0:
                     fields = None
                 else:
                     fields = {"value": fields}
-            self.heka.heka(type=etype,
+            self.heka.heka(type=type,
                            logger=self.loggername,
                            severity=severity,
                            payload=msg,

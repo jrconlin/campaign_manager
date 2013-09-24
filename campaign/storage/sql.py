@@ -73,7 +73,7 @@ class Storage(StorageBase):
             self.campaigns = Base.metadata.tables.get(Campaign.__tablename__)
         except Exception, e:
             self.logger.log(msg='Could not connect to db "%s"' % repr(e),
-                       type='error', severity=LOG.EMERGENCY)
+                            type='error', severity=LOG.EMERGENCY)
             raise e
 
     def health_check(self):

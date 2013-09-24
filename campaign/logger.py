@@ -55,12 +55,15 @@ class Logging(object):
                         "%s [%d] %s : %s", self.loggername,
                         severity, msg, json.dumps(fields))
         if self.heka:
-            if (fields is not None and
-                    btype(fields) is not dict):
-                if len(fields) == 0:
-                    fields = None
-                else:
+            if fields is not None:
+                if btype(fields) is not dict:
                     fields = {"value": fields}
+            else:
+                fields = {}
+            # remove null value keys.
+            for k in fields.keys():
+                if fields[k] is None:
+                    del(fields[k])
             self.heka.heka(type=type,
                            logger=self.loggername,
                            severity=severity,

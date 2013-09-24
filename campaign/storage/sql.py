@@ -186,7 +186,7 @@ class Storage(StorageBase):
             items = self.engine.execute(text(sql), **dict(params))
         except Exception, e:
             self.logger.log(msg='SQL Error "%s" ' % str(e),
-                       type='error', severity=LOG.CRITICAL)
+                            type='error', severity=LOG.CRITICAL)
         result = []
         for item in items:
             # last_accessed may be actually set to 'None'
@@ -207,6 +207,7 @@ class Storage(StorageBase):
                 # token is stripped before being sent to the client.
                 # it's used for metrics tracking.
                 'token': item.id,
+                'created': item.created,
                 # This uses the server string ID for redirect/tracking
                 'url': self.settings.get('redir.url', 'http://%s/%s%s') % (
                         self.settings.get('redir.host', 'localhost'),

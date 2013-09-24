@@ -142,15 +142,25 @@ def get_announcements(request, now=None):
         else:
             raise http.HTTPNoContent
     log_fetched(request, reply)
+    earliest = 0
+    for r in reply['announcements']:
+        if earliest == 0:
+            earliest = r['created']
+        elif r['created'] < earliest:
+            earliest = r['created']
+        del (r['created'])
     # filter out the "token" records, used by logging only.
     reply['announcements'] = map(_filter_token, reply['announcements'])
     response = Response(json.dumps(reply))
     timestamp = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
                               time.gmtime())
+    last_modified = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
+                                  time.gmtime(earliest))
     # The client will echo back in If-Modified-Since whatever we provide
     # in the Date header
     response.headerlist = [
         ('Content-Type', 'application/json; charset=UTF-8'),
+        ('Last-Modified', last_modified),
         ('Date', timestamp)]
     return response
 

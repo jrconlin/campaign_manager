@@ -45,6 +45,7 @@
 <header>
 <h1>Campaign Admin Panel</h1>
 <div class="control">
+    <a class="button" href="/admin/">User Management</a>
 <button class="button logout">Log out</button>
 <!-- yep, this should be a REST get and display call. -->
 </header>
@@ -125,15 +126,15 @@
 <option value="ht">Haitian(Creole)</option>
 <option value="ha">Hausa</option>
 <option value="he">Hebrew</option>
-<option value="iw">Hebrew</option>
+<option value="iw">Hebrew Alternate "iw"</option>
 <option value="hi">Hindi</option>
 <option value="hu">Hungarian</option>
 <option value="is">Icelandic</option>
 <option value="io">Ido</option>
-<option value="id">Indonesian</option>
-<option value="in">Indonesian</option>
+<option value="id">Indonesia</option>
+<option value="in">Indonesian Alternate "in"</option>
 <option value="ia">Interlingua</option>
-<option value="ie">Interlingue</option>
+<option value="ie">Interlingue Alternate "ie"</option>
 <option value="iu">Inuktitut</option>
 <option value="ik">Inupiak</option>
 <option value="ga">Irish</option>

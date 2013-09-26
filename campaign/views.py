@@ -13,6 +13,7 @@ import json
 import os
 import pyramid.httpexceptions as http
 import time
+import pprint
 
 
 api_version = 1
@@ -30,6 +31,9 @@ author2 = Service(name='author2',
 author = Service(name='author',
                  path='/author/%s/' % api_version,
                  description='Authoring Interface')
+admin = Service(name="admin",
+                path="/admin/",
+                description="User Admin page")
 logout = Service(name='logout',
                  path='/logout/',
                  description='logout')
@@ -353,3 +357,49 @@ def health_check(request):
     if request.registry.get('storage').health_check():
         raise http.HTTPOk
     raise http.HTTPServiceUnavailable
+
+
+@admin.get()
+@authorizedOnly
+def admin_get(request, error=None):
+    args = request.params.copy()
+    storage = request.registry.get("storage")
+    session = request.session
+    try:
+        tdata = {'users': storage.user_list(),
+                 'user': session.get('uid', 'invalid@nowhere'),
+                 'args': args,
+                 'error': error}
+        template = get_template("accounts")
+        content_type = "text/html"
+        response = Response(str(template.render(**tdata)),
+                            content_type=content_type)
+        return response
+    except Exception, e:
+        import pdb; pdb.set_trace()
+        print e
+
+
+@admin.post()
+@authorizedOnly
+def admin_post(request):
+    error = ""
+    args = request.params.copy()
+    storage = request.registry.get("storage")
+    sponsor = request.session.get('uid', '')
+    if len(sponsor) == 0:
+        error = "No Sponsor"
+    else:
+        try:
+            uid = args.get('remove', None)
+            if uid is not None:
+                storage.rm_user(uid)
+            else:
+                email = args.get('user', None)
+                if email:
+                    uid = storage.add_user(email, sponsor, 0)
+                if uid is None:
+                    error = "User not added"
+        except Exception, e:
+            error = repr(e)
+    return admin_get(request, error)

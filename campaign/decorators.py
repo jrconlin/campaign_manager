@@ -54,9 +54,15 @@ class authorizedOnly(object):
         try:
             domains = json.loads(settings.get('auth.valid.domains',
                                  '["@mozilla.com", "@mozilla.org"]'))
+            result = False
             for valid_domain in domains:
                 if email.lower().endswith(valid_domain):
-                    return True
+                    result = True
+                    break
+            if not result:
+                return False
+            storage = request.registry.get('storage')
+            return storage.is_user(email)
         except TypeError:
             pass
         except Exception:

@@ -1,14 +1,20 @@
 import json
 import time
-from . import StorageBase, StorageException
+import uuid
+from . import StorageBase, StorageException, Base
 from .metrics import Counter
 from campaign.logger import LOG
 from campaign.views import api_version
-from sqlalchemy import (Column, Integer, String, Text, create_engine, text)
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy import (Column, Integer, String, Text, text)
 
-Base = declarative_base()
+
+class Users(Base):
+    __tablename__ = 'users'
+    email = Column('email', String(100), primary_key=True)
+    id = Column('id', String(32), index=True)
+    sponsor = Column('sponsor', String(100))
+    time = Column('date', Integer)
+    level = Column('level', Integer)
 
 
 class Campaign(Base):
@@ -34,6 +40,7 @@ class Campaign(Base):
     author = Column('author', String(255), index=True)
     created = Column('created', Integer, index=True)
     title = Column('title', String(50))
+    status = Column('status', Integer)
 
 
 class Storage(StorageBase):
@@ -43,37 +50,16 @@ class Storage(StorageBase):
     def __init__(self, config, logger, **kw):
         try:
             super(Storage, self).__init__(config, **kw)
-            self._connect()
-            self.counter = Counter(config, logger, **kw)
             self.logger = logger
+            self._connect()
+            # Store off a link to the main table.
+            self.campaigns = Base.metadata.tables.get(Campaign.__tablename__)
+            self.users = Base.metadata.tables.get(Users.__tablename__)
+            self.counter = Counter(config, logger, **kw)
             #TODO: add the most common index.
         except Exception, e:
             logger.log(msg='Could not initialize Storage "%s"' % str(e),
                        type='error', severity=LOG.CRITICAL)
-            raise e
-
-    def _connect(self):
-        try:
-            userpass = ''
-            host = ''
-            if (self.settings.get('db.user')):
-                userpass = '%s:%s@' % (self.settings.get('db.user'),
-                                       self.settings.get('db.password'))
-            if (self.settings.get('db.host')):
-                host = '%s' % self.settings.get('db.host')
-            dsn = '%s://%s%s/%s' % (self.settings.get('db.type', 'mysql'),
-                                    userpass, host,
-                                    self.settings.get('db.db',
-                                                      self.__database__))
-            self.engine = create_engine(dsn, pool_recycle=3600)
-            Base.metadata.create_all(self.engine)
-            self.Session = scoped_session(sessionmaker(bind=self.engine,
-                                                       expire_on_commit=True))
-            # Store off a link to the main table.
-            self.campaigns = Base.metadata.tables.get(Campaign.__tablename__)
-        except Exception, e:
-            self.logger.log(msg='Could not connect to db "%s"' % repr(e),
-                            type='error', severity=LOG.EMERGENCY)
             raise e
 
     def health_check(self):
@@ -130,7 +116,7 @@ class Storage(StorageBase):
         specificity = 0
         for col in ['lang', 'loc', 'platform',
                     'channel', 'version']:
-            if len(str(data.get(col,''))):
+            if len(str(data.get(col, ''))):
                 specificity += 1
         if data.get('idle_time') and int(data.get('idle_time')) != 0:
             specificity += 1
@@ -169,7 +155,7 @@ class Storage(StorageBase):
         data['idle_time'] = data.get('idle', 0)
         try:
             if 'version' in data:
-                sql +=" and coalesce(version, :version) =  :version"
+                sql += " and coalesce(version, :version) =  :version"
                 params['version'] = str(data['version']).split('.')[0]
         except Exception:
             pass
@@ -245,3 +231,63 @@ class Storage(StorageBase):
         sql = 'delete from %s;' % self.__tablename__
         self.engine.execute(text(sql))
         session.commit()
+
+    def user_health_check(self):
+        #foo
+        try:
+            uid = self.add_user('test', '', 0)
+            self.rm_user(uid)
+            # with self.engine.begin() as conn:
+        except Exception, e:
+            import warnings
+            warnings.warn(str(e))
+            return False
+        return True
+
+    def is_user(self, email):
+        sel = self.users.select(self.users.c.email == email)
+        items = self.engine.execute(sel)
+        row = items.fetchone()
+        if row is None:
+            return False
+        return True
+
+    def user_list(self):
+        result = []
+        sql = "select * from users order by email"
+        items = self.engine.execute(text(sql))
+        for item in items:
+            result.append(dict(item))
+        return result
+
+    def add_user(self, email, sponsor, level=0):
+        try:
+            uid = uuid.uuid4().hex
+            with self.engine.begin() as conn:
+                ins = self.users.insert().values(
+                    id=uid,
+                    email=email,
+                    sponsor=sponsor,
+                    level=level,
+                    date=int(time.time()))
+                conn.execute(ins)
+            return uid
+        except Exception, e:
+            self.logger.log(msg='Could not add user "%s", "%s"' %
+                            (email, repr(e)),
+                            type="error", severity=LOG.ERROR)
+            return None
+
+    def rm_user(self, id):
+        if len(id) == 0 or id == '0':
+            return False
+        try:
+            with self.engine.begin() as conn:
+                rm = self.users.delete().where(self.users.c.id == id)
+                conn.execute(rm)
+                return True
+        except Exception, e:
+            self.logger.log(msg='Could not delete user with id "%s", "%s"' %
+                            (id, repr(e)),
+                            type="error", severity=LOG.ERROR)
+        return False

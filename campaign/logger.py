@@ -64,6 +64,8 @@ class Logging(object):
             for k in fields.keys():
                 if fields[k] is None:
                     del(fields[k])
+                if k in fields and btype(fields[k]) is not str:
+                    fields[k] = str(fields[k])
             self.heka.heka(type=type,
                            logger=self.loggername,
                            severity=severity,

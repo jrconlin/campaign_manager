@@ -40,6 +40,7 @@ class Campaign(Base):
     author = Column('author', String(255), index=True)
     created = Column('created', Integer, index=True)
     title = Column('title', String(50))
+    status = Column('status', Integer)
 
 
 class Storage(StorageBase):

@@ -2,9 +2,8 @@ from campaign.logger import LOG
 from campaign.storage import StorageBase
 from datetime import datetime
 from sqlalchemy import (Column, Integer, String,
-                        create_engine, MetaData, text)
+                        MetaData, text)
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import scoped_session, sessionmaker
 import json
 import re
 import time
@@ -40,28 +39,6 @@ class Counter(StorageBase):
         except Exception, e:
             logger.log(msg='Could not initialize Storage "%s"' % str(e),
                        type='error', severity=LOG.CRITICAL)
-            raise e
-
-    def _connect(self):
-        try:
-            userpass = ''
-            host = ''
-            if (self.settings.get('db.user')):
-                userpass = '%s:%s@' % (self.settings.get('db.user'),
-                                       self.settings.get('db.password'))
-            if (self.settings.get('db.host')):
-                host = '%s' % self.settings.get('db.host')
-            dsn = '%s://%s%s/%s' % (self.settings.get('db.type', 'mysql'),
-                                    userpass, host,
-                                    self.settings.get('db.db',
-                                                      self.__database__))
-            self.engine = create_engine(dsn, pool_recycle=3600)
-            Base.metadata.create_all(self.engine)
-            self.session = scoped_session(sessionmaker(bind=self.engine))()
-            #self.metadata.create_all(self.engine)
-        except Exception, e:
-            self.logger.log(msg='Could not connect to db "%s"' % repr(e),
-                            type='error', severity=LOG.EMERGENCY)
             raise e
 
     def bulk_increment(self, conn, id, action, time=time.time()):

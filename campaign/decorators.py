@@ -1,6 +1,7 @@
 import json
 import pyramid.httpexceptions as http
 import random
+import utils
 from campaign import logger, LOG
 from campaign.auth.default import DefaultAuth
 from dateutil import parser
@@ -62,14 +63,18 @@ class authorizedOnly(object):
             if not result:
                 return False
             storage = request.registry.get('storage')
-            return storage.is_user(email)
+            if settings.get("db.checkAccount", True):
+                return storage.is_user(email)
+            else:
+                return True
         except TypeError:
             pass
         except Exception:
-            if settings.get('dbg.traceback', False):
+            if utils.strToBool(settings.get('dbg.traceback', False)):
                 import traceback
                 traceback.print_exc()
-            if settings.get('dbg.break_unknown_exception', False):
+            if utils.strToBool(settings.get('dbg.break_unknown_exception',
+                                            False)):
                 import pdb
                 pdb.set_trace()
             pass
@@ -107,10 +112,11 @@ class authorizedOnly(object):
             raise e
         except Exception, e:
             settings = request.registry.settings
-            if settings.get('dbg.traceback', False):
+            if utils.strToBool(settings.get('dbg.traceback', False)):
                 import traceback
                 traceback.print_exc()
-            if settings.get('dbg.break_unknown_exception', False):
+            if utils.strToBool(settings.get('dbg.break_unknown_exception',
+                                            False)):
                 import pdb
                 pdb.set_trace()
             logger.log(type='error', severity=LOG.ERROR, msg=str(e))

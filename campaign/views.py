@@ -4,16 +4,16 @@
 """ Cornice services.
 """
 from campaign.logger import LOG
-from campaign.util import strToUTC
 from decorators import checkService, authorizedOnly
 from mako.template import Template
 from mozsvc.metrics import Service
 from webob import Response
+import campaign.utils as utils
 import json
 import os
 import pyramid.httpexceptions as http
 import time
-import pprint
+import logger
 
 
 api_version = 1
@@ -72,7 +72,13 @@ def get_last_accessed(request):
     try:
         if 'If-Modified-Since' in request.headers:
             last_accessed_str = request.headers.get('If-Modified-Since')
-            last_accessed = strToUTC(last_accessed_str)
+            try:
+                last_accessed = utils.strToUTC(last_accessed_str)
+            except Exception, e:
+                request.registry['logger'].log(type='error',
+                                               severity=LOG.ERROR,
+                                               msg='Exception: %e' % str(e))
+                last_accessed = 0
             # pop off tz adjustment (in seconds)
             if request.registry['logger']:
                 ims_str = time.strftime('%a, %d %b %Y %H:%M:%S GMT',
@@ -85,10 +91,10 @@ def get_last_accessed(request):
                                                fields={})
     except Exception, e:
         settings = request.registry.settings
-        if settings.get('dbg.traceback', False):
+        if utils.strToBool(settings.get('dbg.traceback', False)):
             import traceback
             traceback.print_exc()
-        if settings.get('dbg.break_unknown_exception', False):
+        if utils.strToBool(settings.get('dbg.break_unknown_exception', False)):
             import pdb
             pdb.set_trace()
         request.registry['logger'].log(type='error',
@@ -200,7 +206,8 @@ def get_all_announcements(request):
 @author.get()
 @author2.get()
 def admin_page(request, error=None):
-    if request.registry.settings.get('auth.block_authoring', False):
+    if utils.strToBool(request.registry.settings.get('auth.block_authoring',
+                                                     False)):
         raise http.HTTPNotFound()
     auth = authorizedOnly(None)
     if not auth.login(request):
@@ -230,7 +237,8 @@ def admin_page(request, error=None):
 def manage_announce(request):
     args = request.params.copy()
     args.update(request.matchdict)
-    if request.registry.settings.get('auth.block_authoring', False):
+    if utils.strToBool(request.registry.settings.get('auth.block_authoring',
+                                                     False)):
         raise http.HTTPNotFound()
     # Clean up the login info
     try:
@@ -256,10 +264,10 @@ def manage_announce(request):
                 args['author'] = session.get('uid')
             storage.put_announce(args)
     except Exception, e:
-        if settings.get('dbg.traceback', False):
+        if utils.strToBool(settings.get('dbg.traceback', False)):
             import traceback
             traceback.print_exc()
-        if settings.get('dbg.break_unknown_exception', False):
+        if utils.strToBool(settings.get('dbg.break_unknown_exception', False)):
             import pdb
             pdb.set_trace()
         # display error page.
@@ -325,10 +333,10 @@ def login_page(request, error=None):
         return response
     except Exception, e:
         settings = request.registry.settings
-        if settings.get('dbg.traceback', False):
+        if utils.strToBool(settings.get('dbg.traceback', False)):
             import traceback
             traceback.print_exc()
-        if settings.get('dbg.break_unknown_exception', False):
+        if utils.strToBool(settings.get('dbg.break_unknown_exception', False)):
             import pdb
             pdb.set_trace()
         request.registry['logger'].log(str(e), type='error',
@@ -376,7 +384,6 @@ def admin_get(request, error=None):
                             content_type=content_type)
         return response
     except Exception, e:
-        import pdb; pdb.set_trace()
         print e
 
 

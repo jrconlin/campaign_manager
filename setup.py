@@ -13,7 +13,7 @@ with open(os.path.join(here, 'README.rst')) as f:
 
 
 setup(name='campaign',
-    version=1.000,
+    version=1.001,
     description='campaign',
     long_description=README,
     classifiers=[

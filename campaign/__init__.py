@@ -8,10 +8,15 @@ from campaign.resources import Root
 from mozsvc.config import load_into_settings
 from mozsvc.middlewares import _resolve_name
 from campaign.logger import Logging, LOG
-from campaign.storage.metrics import Counter
 
 logger = None
 counter = None
+
+# TO prevent circular references, duplicate this func here.
+def strToBool(s="False"):
+    if type(s) == bool:
+        return s
+    return s.lower() in ["true", "1", "yes", "t"]
 
 
 def get_group(group_name, dictionary):
@@ -66,7 +71,6 @@ def main(global_config, **settings):
     config.add_static_view(name='static', path='campaign:static')
     config.scan("campaign.views")
     logger = Logging(config, global_config['__file__'])
-    counter = Counter(config=config, logger=logger)
     config.registry['storage'] = _resolve_name(
         settings.get('db.backend',
                      'campaign.storage.sql.Storage'))(config=config,
@@ -75,11 +79,9 @@ def main(global_config, **settings):
         'auth',
         settings['config'].get_map('auth'))
     config.registry['logger'] = logger
-    config.registry['counter'] = counter
-    if settings.get('dbg.self_diag', False):
+    config.registry['counter'] = config.registry['storage'].counter
+    if strToBool(settings.get('dbg.self_diag', False)):
         self_diag(config)
     config.registry['logger'].log('Starting up', fields='',
                                   severity=LOG.INFORMATIONAL)
     return config.make_wsgi_app()
-
-

@@ -1,5 +1,6 @@
 import logging
 import json
+import campaign.utils as utils
 from __builtin__ import type as btype
 
 
@@ -28,6 +29,7 @@ class LoggingException(Exception):
 
 
 class Logging(object):
+
     metlog2log = [logging.CRITICAL, logging.CRITICAL, logging.CRITICAL,
                   logging.ERROR, logging.WARNING, logging.INFO,
                   logging.INFO, logging.DEBUG]
@@ -42,7 +44,7 @@ class Logging(object):
         self.loggername = settings.get('logging.name', 'campaign-manager')
         self.logger = logging.getLogger(self.loggername)
         self.logger.level = 1
-        if HEKA and settings.get('logging.use_heka', True):
+        if HEKA and utils.strToBool(settings.get('logging.use_heka', "true")):
             self.heka = client_from_stream_config(
                 open(settings_file, 'r'),
                 'heka')

@@ -1,11 +1,13 @@
 import json
 import time
+import datetime
 import uuid
+import re
 from . import StorageBase, StorageException, Base
-from .metrics import Counter
 from campaign.logger import LOG
 from campaign.views import api_version
-from sqlalchemy import (Column, Integer, String, Text, text)
+from sqlalchemy import (Column, Integer, String, Text,
+                        text)
 
 
 class Users(Base):
@@ -43,6 +45,108 @@ class Campaign(Base):
     status = Column('status', Integer)
 
 
+class Scrapes(Base):
+    __tablename__ = 'scrapes'
+
+    id = Column('id', String(25), unique=True, primary_key=True)
+    served = Column('served', Integer, server_default=text('0'))
+    clicks = Column('clicks', Integer, server_default=text('0'))
+    last = Column('last', Integer, index=True, server_default=text('0'))
+
+
+class CounterException(Exception):
+    pass
+
+
+class Counter(StorageBase):
+    __database__ = 'campaign'
+    __tablename__ = 'scrapes'
+
+    def __init__(self, config, logger, **kw):
+        try:
+            super(Counter, self).__init__(config, **kw)
+            self.logger = logger
+            self._connect()
+            #TODO: add the most common index.
+        except Exception, e:
+            logger.log(msg='Could not initialize Storage "%s"' % str(e),
+                       type='error', severity=LOG.CRITICAL)
+            raise e
+
+    def bulk_increment(self, conn, id, action, time=time.time()):
+        action = re.sub(r'[^0-9A-Za-z]', '', action)
+        try:
+            if (self.settings.get("db.type") == "sqlite"):
+                conn.execute(text("insert or ignore into " +
+                                  self.__tablename__ +
+                                  " (id)" +
+                                  " values (:id ); "),
+                             {"id": id})
+            else:
+                dml = text("insert into " + self.__tablename__
+                           + " (id, %s) values (:id, 1) " % action
+                           + " on duplicate key update %s=%s+1, last=:last;"
+                           % (action, action))
+                conn.execute(dml, {"id": id, "last": time})
+        except Exception, e:
+            self.logger.log(msg="Could not increment id: %s" % str(e),
+                            type="error", severity=LOG.ERROR)
+
+    def increment(self, id, action, time):
+        with self.engine.begin() as conn:
+            self.bulk_increment(conn, id, action, time)
+
+    def fetched(self, data, time=time.time()):
+        with self.engine.begin() as conn:
+            for item in data:
+                self.bulk_increment(conn, item.get('token'), 'served', time)
+
+    def redir(self, data, time=time.time()):
+        self.increment(data.get('id'), 'clicks', time)
+
+    commands = {'redirect': redir,
+                'fetched': fetched}
+
+    def log(self, line):
+        for command in self.commands.keys():
+            if command + ' :' in line:
+                dt = datetime.strptime(line.split(',')[0],
+                                       '%Y-%m-%d %H:%M:%S')
+                timestamp = int(time.mktime(dt.timetuple()))
+                try:
+                    data = json.loads(line.split(command + ' :')[1])
+                    while (isinstance(data, basestring)):
+                        data = json.loads(data)
+                    self.commands.get(command)(self,
+                                               data,
+                                               timestamp)
+                except Exception, e:
+                    self.logger.log(msg="Could not log %s" % str(e),
+                                    type="error", severity=LOG.ERROR)
+                    raise e
+
+    def report(self, id):
+        with self.engine.begin() as conn:
+            resp = conn.execute(text(("select * from %s " %
+                                      self.__tablename__) +
+                                     "where id = :id"), {'id': id})
+            if resp.rowcount > 0:
+                result = resp.fetchone()
+                return dict(zip(resp.keys(), result))
+            else:
+                return {}
+
+    def parse(self, logfile):
+        try:
+            file = open(logfile, 'r')
+            for line in file:
+                self.log(line)
+        except Exception, e:
+            self.logger.log(msg="Could not parse %s" % str(e),
+                            type="error", severity=LOG.ERROR)
+            pass
+
+
 class Storage(StorageBase):
     __database__ = 'campaign'
     __tablename__ = 'campaigns'
@@ -51,11 +155,12 @@ class Storage(StorageBase):
         try:
             super(Storage, self).__init__(config, **kw)
             self.logger = logger
-            self._connect()
             # Store off a link to the main table.
             self.campaigns = Base.metadata.tables.get(Campaign.__tablename__)
             self.users = Base.metadata.tables.get(Users.__tablename__)
+            self.scrapes = Base.metadata.tables.get(Scrapes.__tablename__)
             self.counter = Counter(config, logger, **kw)
+            self._connect()
             #TODO: add the most common index.
         except Exception, e:
             logger.log(msg='Could not initialize Storage "%s"' % str(e),

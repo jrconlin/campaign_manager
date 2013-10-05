@@ -1,6 +1,6 @@
 <!doctype html>
 <%
-    from campaign.util import strToUTC
+    from campaign.utils import strToUTC
     from time import (time, strftime, gmtime)
     import json
 

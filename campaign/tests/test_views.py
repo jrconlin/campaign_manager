@@ -1,6 +1,5 @@
 from campaign import views
 from campaign.storage.sql import Storage
-from campaign.storage.metrics import Counter
 from campaign.tests import TConfig
 from campaign.logger import Logging
 from nose.tools import eq_
@@ -58,6 +57,11 @@ class ViewTest(unittest2.TestCase):
             'body':  "\u0192\u00a9\u02d9\u02da\u02da\u00ac\u2206\u02d9\u02da\u02d9\u00a9\u2206\u00a9\u0192\u00df \u0376\u0376\u0376\u0376\u0376\u0376\u0376\u0376\u0376\u0376\u0376\u0376\u0376\u0376"}
     ]
 
+    settings = TConfig({'db.type': 'sqlite',
+                        'db.db': '/tmp/test.db',
+                        'logging.use_heka': False,
+                        'db.checkAccount': False})
+
     def req(self, matchdict={}, user_id=None, headers=None, **kw):
 
         class Reg(dict):
@@ -70,25 +74,23 @@ class ViewTest(unittest2.TestCase):
                     self.settings = settings
 
         request = Request(headers=headers, **kw)
-        request.GET = kw.get('params',{})
+        request.GET = kw.get('params', {})
         request.registry = Reg(settings=self.config.get_settings())
         request.registry['storage'] = self.storage
         request.registry['logger'] = self.logger
         request.registry['counter'] = self.counter
         request.registry['auth'] = mock.Mock()
         request.registry['auth'].get_user_id.return_value = user_id
+        request.registry.settings.update(self.settings.settings)
         if matchdict:
             request.matchdict.update(matchdict)
         return request
 
     def setUp(self):
         self.config = testing.setUp()
-        tsettings = TConfig({'db.type': 'sqlite',
-                             'db.db': '/tmp/test.db',
-                             'logging.use_heka': False})
-        self.logger = Logging(tsettings, None)
-        self.storage = Storage(config=tsettings, logger=self.logger)
-        self.counter = Counter(config=tsettings, logger=self.logger)
+        self.logger = Logging(self.settings, None)
+        self.storage = Storage(config=self.settings, logger=self.logger)
+        self.counter = self.storage.counter
         records = []
         for diff in self.diffs:
             record = self.base_record.copy()

@@ -63,7 +63,7 @@ class authorizedOnly(object):
             if not result:
                 return False
             storage = request.registry.get('storage')
-            if settings.get("db.checkAccount", True):
+            if utils.strToBool(settings.get("db.checkAccount", True)):
                 return storage.is_user(email)
             else:
                 return True

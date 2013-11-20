@@ -495,7 +495,7 @@
 <label for="channel">Channel:</label>
 <select name="channel">
     <option value="all" selected>all</option>
-    <option value="firefox">firefox</option>
+    <option value="release">release</option>
     <option value="beta">beta</option>
     <option value="aurora">aurora</option>
     <option value="nightly">nightly</option>

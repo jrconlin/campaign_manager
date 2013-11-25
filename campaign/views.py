@@ -50,7 +50,8 @@ _TMPL = os.path.join(os.path.dirname(__file__), 'templates')
 
 
 def get_lang_loc(request):
-    header = request.headers.get('Accept-Language', 'en-US')
+    header = request.headers.get('Accept-Language', 
+            os.environ.get('HTTP-Accept-Language', 'en-US'))
     langloc = header.split(',')[0]
     if ('-' in langloc):
         (lang, loc) = langloc.split('-')
@@ -67,7 +68,8 @@ def get_last_accessed(request):
     last_accessed = None
     try:
         if 'If-Modified-Since' in request.headers:
-            last_accessed_str = request.headers.get('If-Modified-Since')
+            last_accessed_str = request.headers.get('If-Modified-Since',
+                    os.environ.get('HTTP-If-Modified-Since'))
             last_accessed = strToUTC(last_accessed_str)
             # pop off tz adjustment (in seconds)
             if request.registry['logger']:

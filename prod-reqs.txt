@@ -52,9 +52,4 @@ zope.interface==4.0.1
 # other (needed?)
 waitress==0.8.1
 
-# commented out (no longer required)
-# circus==0.5.2
-# distribute==0.6.28
-
-# useful for metlog
-#pyzmq
+uWSGI==1.9.20

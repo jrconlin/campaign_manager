@@ -23,8 +23,8 @@ cornice==0.10
 coverage==3.5.2
 docutils==0.9.1
 metlog-py==0.9.7
--e git+https://github.com/mozilla-services/mozservices.git@73788086d6f02e239cb840f308e173f4e0ea4bfb#egg=mozsvc-dev
--e git+https://github.com/mozilla-services/heka-py.git@85972f7811449fb6cf759f04a17759deefed6cd5#egg=heka_py-dev
+https://github.com/mozilla-services/mozservices/archive/73788086d6f02e239cb840f308e173f4e0ea4bfb.tar.gz
+https://github.com/mozilla-services/heka-py/archive/85972f7811449fb6cf759f04a17759deefed6cd5.tar.gz
 logging
 mock==1.0.0
 nose==1.2.1

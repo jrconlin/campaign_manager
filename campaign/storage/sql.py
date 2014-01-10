@@ -1,6 +1,7 @@
 import json
 import time
 import datetime
+import os
 import uuid
 import re
 from . import StorageBase, StorageException, Base
@@ -171,8 +172,9 @@ class Storage(StorageBase):
         try:
             healthy = True
             with self.engine.begin() as conn:
+                test_id = "test" + os.urandom(5).encode("hex")
                 ins = self.campaigns.insert().values(
-                    id="test",
+                    id=test_id,
                     product="test",
                     channel="test",
                     platform="test",
@@ -183,13 +185,13 @@ class Storage(StorageBase):
                     author="test",
                     created=0)
                 conn.execute(ins)
-                sel = self.campaigns.select(self.campaigns.c.id == "test")
+                sel = self.campaigns.select(self.campaigns.c.id == test_id)
                 resp = conn.execute(sel)
                 rows = resp.fetchall()
                 if not len(rows):
                     healthy = False
                 conn.execute(self.campaigns.delete(self.campaigns.c.id ==
-                                                   "test"))
+                                                   test_id))
         except Exception, e:
             import warnings
             warnings.warn(str(e))

@@ -253,6 +253,7 @@ class Storage(StorageBase):
         # Using raw sql here for performance reasons.
         sql = ("select created, id, note, priority, `specific`, "
                "start_time, idle_time from %s where " % self.__tablename__ +
+               " platform != 'test' and "
                " coalesce(cast(start_time as unsigned), %s) <= %s"
                % (now - 1, now))
         for field in ['product', 'platform', 'channel', 'lang', 'locale']:
@@ -314,7 +315,8 @@ class Storage(StorageBase):
         result = []
         sql = ("select c.*,s.served,s.clicks from " +
                "(campaigns as c left join scrapes " +
-               "as s on c.id=s.id) order by created desc ")
+               "as s on c.id=s.id) where c.platform != 'test' " +
+               "order by created desc ")
         if limit:
             sql += 'limit %d' % limit
         items = self.engine.execute(text(sql))

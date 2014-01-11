@@ -568,7 +568,10 @@
         dnote['platform'] = '<i>All platforms</i>'
     if not dnote.get('version'):
         dnote['version'] = '<i>All versions</i>'
-    anote = json.loads(dnote.get('note','{}'))
+    try:
+        anote = json.loads(dnote.get('note','{}'))
+    except Exception:
+        anote = {}
     rtitle = dnote.get('title','')
     if not len(rtitle or ''):
         rtitle = dnote.get('id')

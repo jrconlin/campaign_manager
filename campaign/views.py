@@ -54,7 +54,8 @@ _TMPL = os.path.join(os.path.dirname(__file__), 'templates')
 
 
 def get_lang_loc(request):
-    header = request.headers.get('Accept-Language', 'en-US')
+    header = request.headers.get('Accept-Language',
+            os.environ.get('HTTP-Accept-Language', 'en-US'))
     langloc = header.split(',')[0]
     if ('-' in langloc):
         (lang, loc) = langloc.split('-')

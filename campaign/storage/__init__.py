@@ -53,15 +53,17 @@ class StorageBase(object):
                                            self.settings.get('db.password'))
                 if (self.settings.get('db.host')):
                     host = '%s' % self.settings.get('db.host')
-                dsn = '%s://%s%s/%s' % (self.settings.get('db.type', 'mysql'),
-                                        userpass, host,
-                                        self.settings.get('db.db',
-                                                      self.__database__))
+                dsn = '%s://%s%s/%s?charset=utf8' % (
+                    self.settings.get('db.type', 'mysql'),
+                    userpass, host,
+                    self.settings.get('db.db',
+                                      self.__database__))
                 self.engine = create_engine(dsn, pool_recycle=3600)
                 Base.metadata.create_all(self.engine)
             if self.Session is None:
-                self.Session = scoped_session(sessionmaker(bind=self.engine,
-                                                       expire_on_commit=True))
+                self.Session = scoped_session(
+                    sessionmaker(bind=self.engine,
+                                 expire_on_commit=True))
         except Exception, e:
             self.logger.log(msg='Could not connect to db "%s"' % repr(e),
                             type='error', severity=LOG.EMERGENCY)

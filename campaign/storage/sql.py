@@ -13,6 +13,9 @@ from sqlalchemy import (Column, Integer, String, Text,
 
 class Users(Base):
     __tablename__ = 'users'
+    __table_args__ = {
+        'mysql_charset': 'utf8'
+    }
     email = Column('email', String(100), primary_key=True)
     id = Column('id', String(32), index=True)
     sponsor = Column('sponsor', String(100))
@@ -22,6 +25,9 @@ class Users(Base):
 
 class Campaign(Base):
     __tablename__ = 'campaigns'
+    __table_args__ = {
+        'mysql_charset': 'utf8'
+    }
 
     # Due to a miscommunication during design, the client was
     # created requiring the 'id' to be a numeric. We use 'id' as
@@ -48,6 +54,9 @@ class Campaign(Base):
 
 class Scrapes(Base):
     __tablename__ = 'scrapes'
+    __table_args__ = {
+        'mysql_charset': 'utf8'
+    }
 
     id = Column('id', String(25), unique=True, primary_key=True)
     served = Column('served', Integer, server_default=text('0'))

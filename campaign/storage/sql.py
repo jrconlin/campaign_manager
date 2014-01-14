@@ -4,6 +4,7 @@ import datetime
 import os
 import uuid
 import re
+import campaign.utils as utils
 from . import StorageBase, StorageException, Base
 from campaign.logger import LOG
 from campaign.views import api_version
@@ -178,6 +179,8 @@ class Storage(StorageBase):
             raise e
 
     def health_check(self):
+        if utils.strToBool(self.settings.get('db.skip_health', False)):
+            return True
         try:
             healthy = True
             with self.engine.begin() as conn:

@@ -58,7 +58,14 @@ class StorageBase(object):
                     userpass, host,
                     self.settings.get('db.db',
                                       self.__database__))
-                self.engine = create_engine(dsn, pool_recycle=3600)
+                pool_size = int(self.settings.get('db.pool.size', '5'))
+                max_overflow = int(self.settings.get('db.pool.max_overflow',
+                                   '10'))
+                recycle = int(self.settings.get('db.pool.recycle', '3600'))
+                self.engine = create_engine(dsn,
+                                            pool_size=pool_size,
+                                            max_overflow=max_overflow,
+                                            pool_recycle=recycle)
                 Base.metadata.create_all(self.engine)
             if self.Session is None:
                 self.Session = scoped_session(

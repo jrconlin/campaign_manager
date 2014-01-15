@@ -20,10 +20,10 @@
       <hgroup>
       <h2>Please Log in</h2>
       </hgroup>
-      <div id="browserid"><img src="https://login.persona.org/i/sign_in_grey.png" id="signin"></div>
+      <div id="browserid"><img src="//login.persona.org/i/sign_in_grey.png" id="signin"></div>
       <footer>&nbsp;</footer>
-      <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js" type="text/javascript"></script>
-      <script id='bidjs' src="https://login.persona.org/include.js" type="text/javascript"></script>
+      <script src="//ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js" type="text/javascript"></script>
+      <script id='bidjs' src="//login.persona.org/include.js" type="text/javascript"></script>
       <script type="text/javascript">
           $(function() {
             email = '';
@@ -46,7 +46,7 @@
         navigator.id.request();
     });
     $('#bidjs').ready(function() {
-        $('#signin').attr('src', "http://login.persona.org/i/sign_in_blue.png");
+        $('#signin').attr('src', "//login.persona.org/i/sign_in_blue.png");
     })
     });
       </script>

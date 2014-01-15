@@ -37,7 +37,7 @@
 <head>
 <title>Welcome ${author}</title>
 <link rel="stylesheet" type="text/css" href="/static/style.css" />
-<link rel="stylesheet" type="text/css" href="http://www.mozilla.org/tabzilla/media/css/tabzilla.css" />
+<link rel="stylesheet" type="text/css" href="//www.mozilla.org/tabzilla/media/css/tabzilla.css" />
 </head>
 <body>
 <!-- This had <blank>ing better not be user facing, so skipping tabzilla -->

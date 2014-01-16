@@ -119,7 +119,11 @@ class authorizedOnly(object):
                                             False)):
                 import pdb
                 pdb.set_trace()
-            logger.log(type='error', severity=LOG.ERROR, msg=str(e))
+            if logger:
+                logger.log(type='error', severity=LOG.ERROR, msg=str(e))
+            else:
+                import sys
+                sys.stderr.write("Auth Error! %s\n", str(e))
             return False
         # User Logged in
         return True

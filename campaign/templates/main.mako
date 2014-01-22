@@ -514,7 +514,7 @@
 </select>
 </fieldset>
 <button class="button" type="submit">Create</button>
-<button class="button" type="clear">Clear</button>
+<button class="button" type="reset">Clear</button>
 </form>
 <div id="existing">
 <h2>Existing Records</h2>

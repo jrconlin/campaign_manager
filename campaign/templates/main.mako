@@ -676,6 +676,14 @@ $("#new_item input").change(function() {
         var cend = ((parseInt(form.idle_time.value)|1) * sday) + cstart;
         console.debug(new Date(cend));
         form.end_time.value = (new Date(cend)).toUTCString();
+        var du = form.dest_url;
+        if (du.value.length && ! du.value.startsWith("http")) {
+            if (!du.classList.contains("warning")) {
+                du.classList.add("warning");
+            }
+        }else{
+            du.classList.remove("warning");
+        }
         var rows=document.getElementById('data').getElementsByClassName('record');
         for (var rl = 0; rl < rows.length; rl++){
             var row = rows[rl];

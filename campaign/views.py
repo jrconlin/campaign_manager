@@ -14,6 +14,7 @@ import os
 import pyramid.httpexceptions as http
 import time
 import logger
+import re
 
 
 api_version = 1
@@ -358,7 +359,10 @@ def handle_redir(request):
     counter.redir(data)
     rlogger.log(type='redirect', severity=LOG.INFORMATIONAL,
                 msg='redirect', fields=data)
-    raise http.HTTPTemporaryRedirect(location=data['dest_url'])
+    redir = data['dest_url']
+    if not re.match(r'^https?://', redir, re.I):
+        redir = "http://" + redir
+    raise http.HTTPTemporaryRedirect(location=redir)
 
 
 @health.get()

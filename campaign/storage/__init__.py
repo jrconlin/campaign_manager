@@ -13,6 +13,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 from time import time
 import json
 import math
+import re
 import string
 
 Base = declarative_base()
@@ -100,6 +101,9 @@ class StorageBase(object):
                 del data[nullable]
         start_time = int(max(now, data.get('start_time', now)))
         end_time = start_time + (86400 * int(data.get('idle_time', 1)))
+        dest_url = data.get('dest_url')
+        if not re.match(r'^https?://', dest_url, re.I):
+            dest_url = "http://" + dest_url
         snip = {'id': data.get('id'),
                 'channel': data.get('channel'),
                 'version': data.get('version'),
@@ -112,7 +116,7 @@ class StorageBase(object):
                     'title': data.get('title'),
                     'text': data.get('body')
                 }),
-                'dest_url': data.get('dest_url'),
+                'dest_url': dest_url,
                 'start_time': start_time,
                 'end_time': end_time,
                 'author': data.get('author'),

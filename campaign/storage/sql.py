@@ -10,6 +10,7 @@ from campaign.logger import LOG
 from campaign.views import api_version
 from sqlalchemy import (Column, Integer, String, Text,
                         text)
+from sqlalchemy.exc import IntegrityError
 
 
 class Users(Base):
@@ -51,6 +52,7 @@ class Campaign(Base):
     created = Column('created', Integer, index=True)
     title = Column('title', String(50))
     status = Column('status', Integer)
+    hashval = Column('hashval', String(64), index=True, unique=True)
 
 
 class Scrapes(Base):
@@ -221,6 +223,23 @@ class Storage(StorageBase):
         result = dict(zip(items.keys(), row))
         return result
 
+    def is_repost(self, data):
+        hashval = data.get('hashval')
+        if hashval is None:
+            self.logger.log(msg="No hash found, ignoring.",
+                            type="error",
+                            severity=LOG.DEBUG)
+            return True
+        with self.engine.begin() as conn:
+            resp = conn.execute(text(("select hashval from %s " %
+                                      self.__tablename__) +
+                                     "where hashval = :hashval",
+                                {"hashval": hashval}))
+            row = resp.fetchone()
+            if row is not None:
+                return True
+        return False
+
     def put_announce(self, data, sessionHandle=None, now=None):
         if sessionHandle:
             session = sessionHandle
@@ -229,6 +248,8 @@ class Storage(StorageBase):
         if isinstance(data, list):
             for item in data:
                 self.put_announce(item, session, now)
+            return self
+        if self.is_repost(data):
             return self
         if data.get('body') is None:
             raise StorageException('Incomplete record. Skipping.')
@@ -239,12 +260,16 @@ class Storage(StorageBase):
                 specificity += 1
         if data.get('idle_time') and int(data.get('idle_time')) != 0:
             specificity += 1
+
         data['specific'] = specificity
         snip = self.normalize_announce(data, now)
         campaign = Campaign(**snip)
 
         session.add(campaign)
-        session.commit()
+        try:
+            session.commit()
+        except IntegrityError:
+            pass
         if not sessionHandle:
             session.flush()
             session.close()

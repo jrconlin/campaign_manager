@@ -119,6 +119,7 @@ class StorageBase(object):
                 'created': data.get('created', now),
                 'specific': data.get('specific'),
                 'title': data.get('ctitle'),
+                'hashval': data.get('hashval'),
                 }
         if snip.get('id') is None:
             snip['id'] = self._gen_key(snip)

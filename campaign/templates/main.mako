@@ -3,6 +3,7 @@
     from campaign.utils import strToUTC
     from time import (time, strftime, gmtime)
     import json
+    import uuid
 
     vers = pageargs.get('version', 1)
     land = pageargs.get('landing', '/author/%s/' % vers)
@@ -10,6 +11,7 @@
     announcements = pageargs.get('announcements', [])
     author = pageargs.get('author', 'UNKNOWN')
     settings = pageargs.get('settings', {})
+    hashval = uuid.uuid4().hex
 
     time_fmt = '%a, %d %b %Y - %H:%M:%S GMT'
 
@@ -50,6 +52,7 @@
 <!-- yep, this should be a REST get and display call. -->
 </header>
 <form id="new_item" action="${land}" method="POST">
+    <input type="hidden" name="hashval" value="${hashval}" />
     <h2>New Item</h2>
     <label for="ctitle">Campaign Name:<input name="ctitle" /></label>
     <input type="hidden" name="author" value="${author}" />

@@ -360,7 +360,7 @@ def handle_redir(request):
     rlogger.log(type='redirect', severity=LOG.INFORMATIONAL,
                 msg='redirect', fields=data)
     redir = data['dest_url']
-    if not re.match(r'^https?://', redir, re.I):
+    if not re.match(r'^(https?|market)://', redir, re.I):
         redir = "http://" + redir
     raise http.HTTPTemporaryRedirect(location=redir)
 

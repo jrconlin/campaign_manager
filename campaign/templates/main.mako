@@ -627,6 +627,7 @@
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js" type="text/javascript"></script>
 <script id='bidjs' src="https://browserid.org/include.js" type="text/javascript"></script>
 <script type="text/javascript">
+    var re = new RegExp("^(https?|market)://","i");
     $(".logout").bind("click", function(e) {
             navigator.id.logout();
             $.ajax({url: "/logout/",
@@ -677,7 +678,7 @@ $("#new_item input").change(function() {
         console.debug(new Date(cend));
         form.end_time.value = (new Date(cend)).toUTCString();
         var du = form.dest_url;
-        if (du.value.length && ! du.value.startsWith("http")) {
+        if (du.value.length && ! du.value.match(re)) {
             if (!du.classList.contains("warning")) {
                 du.classList.add("warning");
             }
